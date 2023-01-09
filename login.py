@@ -13,6 +13,10 @@ class Bcorn(QWidget, form_class):
         super().__init__()
         self.setupUi(self)
 
+        # ---------------- 로그인 위젯 ----------------
+        # 처음 보이는 페이지는 로그인 페이지로 설정
+        self.HRD_Widget.setCurrentIndex(0)
+
         # ID, PW란에 아무것도 입력 안했으면 어떤 걸 적어야 하는지 가이드 라인을 보여줌
         self.led_ID.setPlaceholderText('ID')
         self.led_PW.setPlaceholderText('Password')
@@ -22,8 +26,29 @@ class Bcorn(QWidget, form_class):
         # 비밀번호 입력 라인에디터에서 엔터키 누르면 checkLogin 함수 실행. 로그인 확인 후 승인 or 거절
         self.led_PW.returnPressed.connect(self.checkLogin)
 
+        # 로그아웃 버튼 누르면 로그아웃 하고 로그인 페이지로 돌아감
         self.btn_logout.clicked.connect(self.logout)
 
+        # ---------------- 출석 위젯 ----------------
+        # 출석 버튼 위젯은 입실 위젯을 먼저 보이게 설정
+        self.schedule_btnWidget.setCurrentIndex(0)
+
+        # 입실 버튼 누르면 외출, 퇴실 버튼 있는 위젯으로 이동
+        self.btn_present.clicked.connect(self.move_goingoutANDleave)
+
+        # 외출 버튼 누르면 복귀 버튼 있는 위젯으로 이동
+        self.btn_goingout.clicked.connect(self.move_return)
+
+    # ---------------- 출석 메서드 ----------------
+    # 외출, 퇴실 버튼 있는 위젯으로 이동하는 메서드
+    def move_goingoutANDleave(self):
+        self.schedule_btnWidget.setCurrentIndex(1)
+
+    # 외출 하면 복귀 버튼 있는 위젯으로 이동하는 메서드
+    def move_return(self):
+        self.schedule_btnWidget.setCurrentIndex(2)
+
+    # ---------------- 로그인 메서드 ----------------
     # 메인 화면에서 로그아웃버튼을 누르면 로그인 창으로 되돌아옴
     def logout(self):
         self.HRD_Widget.setCurrentIndex(0)
