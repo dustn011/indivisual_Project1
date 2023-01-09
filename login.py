@@ -39,7 +39,18 @@ class Bcorn(QWidget, form_class):
         # 외출 버튼 누르면 복귀 버튼 있는 위젯으로 이동
         self.btn_goingout.clicked.connect(self.move_return)
 
+        # 복귀 버튼 누르면 퇴실 버튼만 있는 위젯으로 이동
+        self.btn_return.clicked.connect(self.move_leave)
+
+        # 퇴실 버튼 누르면 출석 체크 완료
+        self.btn_leave1.clicked.connect(self.attandance_check)
+        self.btn_leave2.clicked.connect(self.attandance_check)
+
     # ---------------- 출석 메서드 ----------------
+    # 퇴실 버튼 누르면 출석 체크 완료 위젯으로 이동하는 메서드
+    def attandance_check(self):
+        self.schedule_btnWidget.setCurrentIndex(4)
+
     # 외출, 퇴실 버튼 있는 위젯으로 이동하는 메서드
     def move_goingoutANDleave(self):
         self.schedule_btnWidget.setCurrentIndex(1)
@@ -48,10 +59,14 @@ class Bcorn(QWidget, form_class):
     def move_return(self):
         self.schedule_btnWidget.setCurrentIndex(2)
 
+    def move_leave(self):
+        self.schedule_btnWidget.setCurrentIndex(3)
+
     # ---------------- 로그인 메서드 ----------------
     # 메인 화면에서 로그아웃버튼을 누르면 로그인 창으로 되돌아옴
     def logout(self):
         self.HRD_Widget.setCurrentIndex(0)
+        self.schedule_btnWidget.setCurrentIndex(0)
 
     # DB에서 ID, PW 정보 가져와서 입력한 ID, PW와 대조하기
     def checkLogin(self):
@@ -59,22 +74,23 @@ class Bcorn(QWidget, form_class):
         checking_pw = self.led_PW.text()
 
         # DB 연결하기
-        src_db = pymysql.connect(host='127.0.0.1', user='root', password='DUstn123!', db='b-corn', charset='utf8')
+        src_db = pymysql.connect(host='10.10.21.102', user='local', password='0000', db='b-corn', charset='utf8')
         # DB와 상호작용하기 위해 연결해주는 cursor 객체 만듬
         cur_corn = src_db.cursor()
 
         # 회원정보의 ID가 checking_id이고 PW는 checking_pw인 사람의 정보를 가져오고 싶어
-        sql = f"SELECT * FROM `b-corn`.student_data WHERE (아이디 = '{checking_id}') AND (비밀번호 = '{checking_pw}')"
+        sql = f"SELECT * FROM student_data WHERE (아이디 = '{checking_id}') AND (비밀번호 = '{checking_pw}')"
 
         # execute 메서드로 db에 sql 문장 전송
         cur_corn.execute(sql)
+
 
         # 전체 나열 함수, 레코드를 배열(튜플) 형식으로 저장해준다(fetch : 나열하다 정렬하다)
         self.account = cur_corn.fetchall()      # 로그인 하는 account 계정 정보 저장
         # DB 닫아주기
         src_db.close()
 
-        # 로그인, 비밀번호 틀렸을 시
+        # 로그인, 비밀번호 틀렸을 시 self.account에는 빈 튜플만 저장됨
         if not bool(self.account):
             self.reject_login()     # 로그인 거절 함수 실행
         else:
