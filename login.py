@@ -49,6 +49,13 @@ class Bcorn(QWidget, form_class):
         self.btn_leave1.clicked.connect(self.method_leave)
         self.btn_leave2.clicked.connect(self.method_leave)
 
+        # ---------------- 일정 위젯 ----------------
+        self.btn_showChalendar.clicked.connect(self.move_scheduleWidget)
+
+    # ---------------- 일정 메서드 ----------------
+    def move_scheduleWidget(self):
+        pass
+
     # ---------------- 출석 메서드 ----------------
     # 출석 상태 확인 메서드(로그인 후 실행)
     def check_attandance(self):
