@@ -2,7 +2,7 @@ import pymysql
 import sys
 from PyQt5.QtWidgets import *
 from PyQt5 import uic
-from PyQt5.QtCore import QTime, Qt
+from PyQt5.QtCore import QTime, QDate
 
 # ui 클래스
 form_class = uic.loadUiType("ui/main.ui")[0]
@@ -50,15 +50,48 @@ class Bcorn(QWidget, form_class):
     # ---------------- 출석 메서드 ----------------
     # 입실 버튼 누르면 실행되는 메서드
     def method_present(self):
+        # 입실 체크 메세지 출력 Yes 누르면 입실됨
         check = QMessageBox.question(self, '입실', '입실 하겠습니까?', QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
         if check == QMessageBox.Yes:
+            # 입실 완료 메세지
             QMessageBox.information(self, '입실 완료', '입실 하셨습니다')
             # 외출, 퇴실 버튼 있는 위젯으로 이동
             self.schedule_btnWidget.setCurrentIndex(1)
-            # 입실 시간 텍스트 브라우저에 적음
-            time = QTime.currentTime()  # 현재 시간 QTime.current로 가져와서 time 변수에 넣어주기
+
+            # 현재 시간 QTime.current로 가져와서 time 변수에 넣어주기
+            time = QTime.currentTime()
+            # 현재 날짜 QDate.current로 가져와서 date 변수에 넣어주기
+            date = QDate.currentDate()
+
             # 입실 | **:** 형태로 입실 시간 time_present 텍스트 브라우저에 넣어주기
             self.time_present.setText(time.toString('입실 | hh:mm'))
+
+            # 쿼리문으로 전달할 날짜 데이터 문자열로 저장
+            nowDate = date.toString('yyMMdd')
+            # 쿼리문으로 전달할 학생 번호 저장
+            student_num = str(self.account[0])
+            # 쿼리문으로 전달할 입실 시간 데이터 문자열로 저장
+            nowTime = time.toString('hhmmss')
+
+            # 지금 로그인 한 사람의 정보 가져오기
+            # print(self.account)
+            # print(type(student_name), nowTime, nowDate)
+
+            # DB 연결하기
+            src_db = pymysql.connect(host='10.10.21.102', user='local', password='0000', db='b-corn', charset='utf8')
+            # DB와 상호작용하기 위해 연결해주는 cursor 객체 만듬
+            cur_corn = src_db.cursor()
+
+            # 오늘 날짜와 로그인한 사람의 학생번호, 입실시간을 DB에 넣고싶어
+            sql = f"INSERT INTO test_attandance(날짜, 학생번호, 입실시간)" \
+                  f"VALUES({nowDate}, {student_num}, {nowTime})"
+
+            # execute 메서드로 db에 sql 문장 전송
+            cur_corn.execute(sql)
+            # 쿼리문 실행!
+            src_db.commit()
+            # DB 닫아주기
+            src_db.close()
 
     # 외출 버튼 누르면 실행되는 메서드
     def method_goingout(self):
@@ -67,10 +100,40 @@ class Bcorn(QWidget, form_class):
             QMessageBox.information(self, '외출', '시간 안에 복귀해주세요')
             # 복귀 버튼 있는 위젯으로 이동
             self.schedule_btnWidget.setCurrentIndex(2)
+
             # 외출 시간 텍스트 브라우저에 적음
             time = QTime.currentTime()  # 현재 시간 QTime.current로 가져와서 time 변수에 넣어주기
+            # 현재 날짜 QDate.current로 가져와서 date 변수에 넣어주기
+            date = QDate.currentDate()
+
             # 외출 | **:** 형태로 입실 시간 time_present 텍스트 브라우저에 넣어주기
             self.time_goingout.setText(time.toString('외출 | hh:mm'))
+
+            # 쿼리문으로 전달할 날짜 데이터 문자열로 저장
+            nowDate = date.toString('yyMMdd')
+            # 쿼리문으로 전달할 학생 번호 저장
+            student_num = str(self.account[0])
+            # 쿼리문으로 전달할 외출 시간 데이터 문자열로 저장
+            nowTime = time.toString('hhmmss')
+
+            # 지금 로그인 한 사람의 정보 가져오기
+            # print(self.account)
+            print(type(student_num), nowTime, nowDate)
+
+            # DB 연결하기
+            src_db = pymysql.connect(host='10.10.21.102', user='local', password='0000', db='b-corn', charset='utf8')
+            # DB와 상호작용하기 위해 연결해주는 cursor 객체 만듬
+            cur_corn = src_db.cursor()
+
+            # 외출 시간을 그 사람이 입실한 날짜와 학생번호가 일치하는 row에 업데이트 하고 싶어
+            sql = f"UPDATE test_attandance SET 외출시간 = {nowTime} WHERE (날짜 = {nowDate}) AND (학생번호 = {student_num})"
+
+            # execute 메서드로 db에 sql 문장 전송
+            cur_corn.execute(sql)
+            # 쿼리문 실행!
+            src_db.commit()
+            # DB 닫아주기
+            src_db.close()
 
     # 복귀 버튼 누르면 실행되는 메서드
     def method_return(self):
@@ -118,14 +181,15 @@ class Bcorn(QWidget, form_class):
         cur_corn = src_db.cursor()
 
         # 회원정보의 ID가 checking_id이고 PW는 checking_pw인 사람의 정보를 가져오고 싶어
-        sql = f"SELECT * FROM student_data WHERE (아이디 = '{checking_id}') AND (비밀번호 = '{checking_pw}')"
+        sql = f"SELECT * FROM student_test WHERE (아이디 = '{checking_id}') AND (비밀번호 = '{checking_pw}')"              # test용 임시 데이터 만듬(수정 할 것)
 
         # execute 메서드로 db에 sql 문장 전송
         cur_corn.execute(sql)
 
-
         # 전체 나열 함수, 레코드를 배열(튜플) 형식으로 저장해준다(fetch : 나열하다 정렬하다)
-        self.account = cur_corn.fetchall()      # 로그인 하는 account 계정 정보 저장
+        account = cur_corn.fetchall()      # 로그인 하는 account 계정 정보 저장(2중튜플)
+        self.account = account[0]       # 2중 튜플이 아닌 일반 1중 튜플로 회원 정보 저장
+
         # DB 닫아주기
         src_db.close()
 
