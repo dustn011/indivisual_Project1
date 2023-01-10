@@ -50,39 +50,51 @@ class Bcorn(QWidget, form_class):
     # ---------------- 출석 메서드 ----------------
     # 입실 버튼 누르면 실행되는 메서드
     def method_present(self):
-        # 외출, 퇴실 버튼 있는 위젯으로 이동
-        self.schedule_btnWidget.setCurrentIndex(1)
-        # 입실 시간 텍스트 브라우저에 적음
-        time = QTime.currentTime()      # 현재 시간 QTime.current로 가져와서 time 변수에 넣어주기
-        # 입실 | **:** 형태로 입실 시간 time_present 텍스트 브라우저에 넣어주기
-        self.time_present.setText(time.toString('입실 | hh:mm'))
+        check = QMessageBox.question(self, '입실', '입실 하겠습니까?', QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+        if check == QMessageBox.Yes:
+            QMessageBox.information(self, '입실 완료', '입실 하셨습니다')
+            # 외출, 퇴실 버튼 있는 위젯으로 이동
+            self.schedule_btnWidget.setCurrentIndex(1)
+            # 입실 시간 텍스트 브라우저에 적음
+            time = QTime.currentTime()  # 현재 시간 QTime.current로 가져와서 time 변수에 넣어주기
+            # 입실 | **:** 형태로 입실 시간 time_present 텍스트 브라우저에 넣어주기
+            self.time_present.setText(time.toString('입실 | hh:mm'))
 
     # 외출 버튼 누르면 실행되는 메서드
     def method_goingout(self):
-        # 복귀 버튼 있는 위젯으로 이동
-        self.schedule_btnWidget.setCurrentIndex(2)
-        # 외출 시간 텍스트 브라우저에 적음
-        time = QTime.currentTime()  # 현재 시간 QTime.current로 가져와서 time 변수에 넣어주기
-        # 외출 | **:** 형태로 입실 시간 time_present 텍스트 브라우저에 넣어주기
-        self.time_goingout.setText(time.toString('외출 | hh:mm'))
+        check = QMessageBox.question(self, '외출', '외출 하겠습니까?', QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+        if check == QMessageBox.Yes:
+            QMessageBox.information(self, '외출', '시간 안에 복귀해주세요')
+            # 복귀 버튼 있는 위젯으로 이동
+            self.schedule_btnWidget.setCurrentIndex(2)
+            # 외출 시간 텍스트 브라우저에 적음
+            time = QTime.currentTime()  # 현재 시간 QTime.current로 가져와서 time 변수에 넣어주기
+            # 외출 | **:** 형태로 입실 시간 time_present 텍스트 브라우저에 넣어주기
+            self.time_goingout.setText(time.toString('외출 | hh:mm'))
 
     # 복귀 버튼 누르면 실행되는 메서드
     def method_return(self):
-        # 퇴실 버튼 있는 위젯으로 이동
-        self.schedule_btnWidget.setCurrentIndex(3)
-        # 복귀 시간 텍스트 브라우저에 적음
-        time = QTime.currentTime()  # 현재 시간 QTime.current로 가져와서 time 변수에 넣어주기
-        # 복귀 | **:** 형태로 복귀 시간 time_present 텍스트 브라우저에 넣어주기
-        self.time_return.setText(time.toString('복귀 | hh:mm'))
+        check = QMessageBox.question(self, '복귀', '복귀 하겠습니까?', QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+        if check == QMessageBox.Yes:
+            QMessageBox.information(self, '복귀 완료', '복귀 하셨습니다')
+            # 퇴실 버튼 있는 위젯으로 이동
+            self.schedule_btnWidget.setCurrentIndex(3)
+            # 복귀 시간 텍스트 브라우저에 적음
+            time = QTime.currentTime()  # 현재 시간 QTime.current로 가져와서 time 변수에 넣어주기
+            # 복귀 | **:** 형태로 복귀 시간 time_present 텍스트 브라우저에 넣어주기
+            self.time_return.setText(time.toString('복귀 | hh:mm'))
 
     # 퇴실 버튼 누르면 실행되는 메서드
     def method_leave(self):
-        # 출석 체크 완료 위젯으로 이동
-        self.schedule_btnWidget.setCurrentIndex(4)
-        # 퇴실 시간 텍스트 브라우저에 적음
-        time = QTime.currentTime()      # 현재 시간 QTime.current로 가져와서 time 변수에 넣어주기
-        # 퇴실 | **:** 형태로 입실 시간 time_present 텍스트 브라우저에 넣어주기
-        self.time_leave.setText(time.toString('퇴실 | hh:mm'))
+        check = QMessageBox.question(self, '퇴실', '퇴실 하겠습니까?', QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+        if check == QMessageBox.Yes:
+            QMessageBox.information(self, '퇴실 완료', '퇴실 하셨습니다')
+            # 출석 체크 완료 위젯으로 이동
+            self.schedule_btnWidget.setCurrentIndex(4)
+            # 퇴실 시간 텍스트 브라우저에 적음
+            time = QTime.currentTime()      # 현재 시간 QTime.current로 가져와서 time 변수에 넣어주기
+            # 퇴실 | **:** 형태로 입실 시간 time_present 텍스트 브라우저에 넣어주기
+            self.time_leave.setText(time.toString('퇴실 | hh:mm'))
 
     # ---------------- 로그인 메서드 ----------------
     # 메인 화면에서 로그아웃버튼을 누르면 로그인 창으로 되돌아옴
