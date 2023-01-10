@@ -2,6 +2,7 @@ import pymysql
 import sys
 from PyQt5.QtWidgets import *
 from PyQt5 import uic
+from PyQt5.QtCore import QTime, Qt
 
 # ui 클래스
 form_class = uic.loadUiType("ui/main.ui")[0]
@@ -30,43 +31,69 @@ class Bcorn(QWidget, form_class):
         self.btn_logout.clicked.connect(self.logout)
 
         # ---------------- 출석 위젯 ----------------
-        # 출석 버튼 위젯은 입실 위젯을 먼저 보이게 설정
+        # 출석 위젯은 입실 위젯을 먼저 보이게 설정
         self.schedule_btnWidget.setCurrentIndex(0)
 
-        # 입실 버튼 누르면 외출, 퇴실 버튼 있는 위젯으로 이동
-        self.btn_present.clicked.connect(self.move_goingoutANDleave)
+        # 입실 버튼 누르면 메소드 실행(출석 체크 시작)
+        self.btn_present.clicked.connect(self.method_present)
 
-        # 외출 버튼 누르면 복귀 버튼 있는 위젯으로 이동
-        self.btn_goingout.clicked.connect(self.move_return)
+        # 외출 버튼 누르면 메소드 실행
+        self.btn_goingout.clicked.connect(self.method_goingout)
 
-        # 복귀 버튼 누르면 퇴실 버튼만 있는 위젯으로 이동
-        self.btn_return.clicked.connect(self.move_leave)
+        # 복귀 버튼 누르면 메소드 실행
+        self.btn_return.clicked.connect(self.method_return)
 
-        # 퇴실 버튼 누르면 출석 체크 완료
-        self.btn_leave1.clicked.connect(self.attandance_check)
-        self.btn_leave2.clicked.connect(self.attandance_check)
+        # 퇴실 버튼 누르면 메소드 실행(출석 체크 완료)
+        self.btn_leave1.clicked.connect(self.method_leave)
+        self.btn_leave2.clicked.connect(self.method_leave)
 
     # ---------------- 출석 메서드 ----------------
-    # 퇴실 버튼 누르면 출석 체크 완료 위젯으로 이동하는 메서드
-    def attandance_check(self):
-        self.schedule_btnWidget.setCurrentIndex(4)
-
-    # 외출, 퇴실 버튼 있는 위젯으로 이동하는 메서드
-    def move_goingoutANDleave(self):
+    # 입실 버튼 누르면 실행되는 메서드
+    def method_present(self):
+        # 외출, 퇴실 버튼 있는 위젯으로 이동
         self.schedule_btnWidget.setCurrentIndex(1)
+        # 입실 시간 텍스트 브라우저에 적음
+        time = QTime.currentTime()      # 현재 시간 QTime.current로 가져와서 time 변수에 넣어주기
+        # 입실 | **:** 형태로 입실 시간 time_present 텍스트 브라우저에 넣어주기
+        self.time_present.setText(time.toString('입실 | hh:mm'))
 
-    # 외출 하면 복귀 버튼 있는 위젯으로 이동하는 메서드
-    def move_return(self):
+    # 외출 버튼 누르면 실행되는 메서드
+    def method_goingout(self):
+        # 복귀 버튼 있는 위젯으로 이동
         self.schedule_btnWidget.setCurrentIndex(2)
+        # 외출 시간 텍스트 브라우저에 적음
+        time = QTime.currentTime()  # 현재 시간 QTime.current로 가져와서 time 변수에 넣어주기
+        # 외출 | **:** 형태로 입실 시간 time_present 텍스트 브라우저에 넣어주기
+        self.time_goingout.setText(time.toString('외출 | hh:mm'))
 
-    def move_leave(self):
+    # 복귀 버튼 누르면 실행되는 메서드
+    def method_return(self):
+        # 퇴실 버튼 있는 위젯으로 이동
         self.schedule_btnWidget.setCurrentIndex(3)
+        # 복귀 시간 텍스트 브라우저에 적음
+        time = QTime.currentTime()  # 현재 시간 QTime.current로 가져와서 time 변수에 넣어주기
+        # 복귀 | **:** 형태로 복귀 시간 time_present 텍스트 브라우저에 넣어주기
+        self.time_return.setText(time.toString('복귀 | hh:mm'))
+
+    # 퇴실 버튼 누르면 실행되는 메서드
+    def method_leave(self):
+        # 출석 체크 완료 위젯으로 이동
+        self.schedule_btnWidget.setCurrentIndex(4)
+        # 퇴실 시간 텍스트 브라우저에 적음
+        time = QTime.currentTime()      # 현재 시간 QTime.current로 가져와서 time 변수에 넣어주기
+        # 퇴실 | **:** 형태로 입실 시간 time_present 텍스트 브라우저에 넣어주기
+        self.time_leave.setText(time.toString('퇴실 | hh:mm'))
 
     # ---------------- 로그인 메서드 ----------------
     # 메인 화면에서 로그아웃버튼을 누르면 로그인 창으로 되돌아옴
     def logout(self):
         self.HRD_Widget.setCurrentIndex(0)
         self.schedule_btnWidget.setCurrentIndex(0)
+        # 입실 퇴실 시간 ui에서 지우기
+        self.time_present.clear()
+        self.time_leave.clear()
+        self.time_goingout.clear()
+        self.time_return.clear()
 
     # DB에서 ID, PW 정보 가져와서 입력한 ID, PW와 대조하기
     def checkLogin(self):
