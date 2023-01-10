@@ -31,8 +31,6 @@ class Bcorn(QWidget, form_class):
         self.btn_logout.clicked.connect(self.logout)
 
         # ---------------- 출석 위젯 ----------------
-        # 출석 위젯은 입실 위젯을 먼저 보이게 설정
-        self.schedule_btnWidget.setCurrentIndex(0)
 
         # 입실 버튼 누르면 메소드 실행(출석 체크 시작)
         self.btn_present.clicked.connect(self.method_present)
@@ -48,6 +46,43 @@ class Bcorn(QWidget, form_class):
         self.btn_leave2.clicked.connect(self.method_leave)
 
     # ---------------- 출석 메서드 ----------------
+    # 출석 상태 확인 메서드(로그인 후 실행)
+    def check_attandance(self):
+        # DB를 열고 오늘 접속한 회원의 출석상태 확인
+        src_db = pymysql.connect(host='10.10.21.102', user='local', password='0000', db='b-corn', charset='utf8')
+        # DB와 상호작용하기 위해 연결해주는 cursor 객체 만듬
+        cur_corn = src_db.cursor()
+
+        # 오늘 로그인한 사람의 출석 상황을 보고싶어
+        sql = f"SELECT * FROM test_attandance WHERE 학생번호 = {self.account[0]}"
+
+        # execute 메서드로 db에 sql 문장 전송
+        cur_corn.execute(sql)
+        attandance = cur_corn.fetchall()      # 오늘 로그인한 사람의 출석 상황 정보 저장(2중튜플)
+        # DB 닫아주기
+        src_db.close()
+        # print(str(attandance[0][-1])) print(attandance)
+        if bool(attandance):
+            # 입실한 상태이면 외출 / 퇴실 위젯이 뜨게 함
+            if bool(attandance[0][-4]):
+                self.schedule_btnWidget.setCurrentIndex(1)  # 외출 / 퇴실 위젯은 인덱스 1번
+                self.time_present.setText(f'입실 | {attandance[0][-4]}')
+            # 외출한 상태이면 복귀 위젯이 뜨게 함
+            if bool(attandance[0][-3]):
+                self.schedule_btnWidget.setCurrentIndex(2)      # 복귀 위젯은 인덱스 2번
+                self.time_goingout.setText(f'외출 | {attandance[0][-3]}')
+            # 복귀한 상태이면 퇴실 위젯이 뜨게 함
+            if bool(attandance[0][-2]):
+                self.schedule_btnWidget.setCurrentIndex(3)      # 퇴실 위젯은 인덱스 3번
+                self.time_return.setText(f'복귀 | {attandance[0][-2]}')
+            # 퇴실 했으면 출석 완료 위젯이 뜨게 함
+            if bool(attandance[0][-1]):
+                self.schedule_btnWidget.setCurrentIndex(4)  # 출석 완료 위젯은 인덱스 4번
+                self.time_leave.setText(f'퇴실 | {attandance[0][-1]}')
+        # 입실 하지 않은 상태일 때 입실 위젯 뜨게 함
+        else:
+            self.schedule_btnWidget.setCurrentIndex(0)      # 입실 위젯은 인덱스 0번
+
     # 입실 버튼 누르면 실행되는 메서드
     def method_present(self):
         # 입실 체크 메세지 출력 Yes 누르면 입실됨
@@ -64,7 +99,7 @@ class Bcorn(QWidget, form_class):
             date = QDate.currentDate()
 
             # 입실 | **:** 형태로 입실 시간 time_present 텍스트 브라우저에 넣어주기
-            self.time_present.setText(time.toString('입실 | hh:mm'))
+            self.time_present.setText(time.toString('입실 | hh:mm:ss'))
 
             # 쿼리문으로 전달할 날짜 데이터 문자열로 저장
             nowDate = date.toString('yyMMdd')
@@ -107,7 +142,7 @@ class Bcorn(QWidget, form_class):
             date = QDate.currentDate()
 
             # 외출 | **:** 형태로 입실 시간 time_present 텍스트 브라우저에 넣어주기
-            self.time_goingout.setText(time.toString('외출 | hh:mm'))
+            self.time_goingout.setText(time.toString('외출 | hh:mm:ss'))
 
             # 쿼리문으로 전달할 날짜 데이터 문자열로 저장
             nowDate = date.toString('yyMMdd')
@@ -115,10 +150,6 @@ class Bcorn(QWidget, form_class):
             student_num = str(self.account[0])
             # 쿼리문으로 전달할 외출 시간 데이터 문자열로 저장
             nowTime = time.toString('hhmmss')
-
-            # 지금 로그인 한 사람의 정보 가져오기
-            # print(self.account)
-            print(type(student_num), nowTime, nowDate)
 
             # DB 연결하기
             src_db = pymysql.connect(host='10.10.21.102', user='local', password='0000', db='b-corn', charset='utf8')
@@ -142,10 +173,40 @@ class Bcorn(QWidget, form_class):
             QMessageBox.information(self, '복귀 완료', '복귀 하셨습니다')
             # 퇴실 버튼 있는 위젯으로 이동
             self.schedule_btnWidget.setCurrentIndex(3)
+
             # 복귀 시간 텍스트 브라우저에 적음
             time = QTime.currentTime()  # 현재 시간 QTime.current로 가져와서 time 변수에 넣어주기
+            # 현재 날짜 QDate.current로 가져와서 date 변수에 넣어주기
+            date = QDate.currentDate()
+
             # 복귀 | **:** 형태로 복귀 시간 time_present 텍스트 브라우저에 넣어주기
-            self.time_return.setText(time.toString('복귀 | hh:mm'))
+            self.time_return.setText(time.toString('복귀 | hh:mm:ss'))
+
+            # 쿼리문으로 전달할 날짜 데이터 문자열로 저장
+            nowDate = date.toString('yyMMdd')
+            # 쿼리문으로 전달할 학생 번호 저장
+            student_num = str(self.account[0])
+            # 쿼리문으로 전달할 외출 시간 데이터 문자열로 저장
+            nowTime = time.toString('hhmmss')
+
+            # 지금 로그인 한 사람의 정보 가져오기
+            # print(self.account)
+            print(type(student_num), nowTime, nowDate)
+
+            # DB 연결하기
+            src_db = pymysql.connect(host='10.10.21.102', user='local', password='0000', db='b-corn', charset='utf8')
+            # DB와 상호작용하기 위해 연결해주는 cursor 객체 만듬
+            cur_corn = src_db.cursor()
+
+            # 복귀 시간을 그 사람이 입실한 날짜와 학생번호가 일치하는 row에 업데이트 하고 싶어
+            sql = f"UPDATE test_attandance SET 복귀시간 = {nowTime} WHERE (날짜 = {nowDate}) AND (학생번호 = {student_num})"
+
+            # execute 메서드로 db에 sql 문장 전송
+            cur_corn.execute(sql)
+            # 쿼리문 실행!
+            src_db.commit()
+            # DB 닫아주기
+            src_db.close()
 
     # 퇴실 버튼 누르면 실행되는 메서드
     def method_leave(self):
@@ -154,10 +215,40 @@ class Bcorn(QWidget, form_class):
             QMessageBox.information(self, '퇴실 완료', '퇴실 하셨습니다')
             # 출석 체크 완료 위젯으로 이동
             self.schedule_btnWidget.setCurrentIndex(4)
+
             # 퇴실 시간 텍스트 브라우저에 적음
             time = QTime.currentTime()      # 현재 시간 QTime.current로 가져와서 time 변수에 넣어주기
+            # 현재 날짜 QDate.current로 가져와서 date 변수에 넣어주기
+            date = QDate.currentDate()
+
             # 퇴실 | **:** 형태로 입실 시간 time_present 텍스트 브라우저에 넣어주기
-            self.time_leave.setText(time.toString('퇴실 | hh:mm'))
+            self.time_leave.setText(time.toString('퇴실 | hh:mm:ss'))
+
+            # 쿼리문으로 전달할 날짜 데이터 문자열로 저장
+            nowDate = date.toString('yyMMdd')
+            # 쿼리문으로 전달할 학생 번호 저장
+            student_num = str(self.account[0])
+            # 쿼리문으로 전달할 외출 시간 데이터 문자열로 저장
+            nowTime = time.toString('hhmmss')
+
+            # 지금 로그인 한 사람의 정보 가져오기
+            # print(self.account)
+            print(type(student_num), nowTime, nowDate)
+
+            # DB 연결하기
+            src_db = pymysql.connect(host='10.10.21.102', user='local', password='0000', db='b-corn', charset='utf8')
+            # DB와 상호작용하기 위해 연결해주는 cursor 객체 만듬
+            cur_corn = src_db.cursor()
+
+            # 퇴실 시간을 그 사람이 입실한 날짜와 학생번호가 일치하는 row에 업데이트 하고 싶어
+            sql = f"UPDATE test_attandance SET 퇴실시간 = {nowTime}, 출석 = 'O'  WHERE (날짜 = {nowDate}) AND (학생번호 = {student_num})"
+
+            # execute 메서드로 db에 sql 문장 전송
+            cur_corn.execute(sql)
+            # 쿼리문 실행!
+            src_db.commit()
+            # DB 닫아주기
+            src_db.close()
 
     # ---------------- 로그인 메서드 ----------------
     # 메인 화면에서 로그아웃버튼을 누르면 로그인 창으로 되돌아옴
@@ -207,7 +298,10 @@ class Bcorn(QWidget, form_class):
         # 아이디, 비밀번호 입력한 라인에디터 박스 초기화
         self.led_ID.clear()
         self.led_PW.clear()
-        
+
+        # 출석 상태에 따라서 어떤 출색 위젯을 먼저 보이게 할 지 설정
+        self.check_attandance()
+
     # 로그인 실패 시 실행하는 함수
     def reject_login(self):
         # 입력 실패 안내 문구 출력함
