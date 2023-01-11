@@ -30,7 +30,9 @@ class Bcorn(QWidget, form_class):
         self.led_studentPW.returnPressed.connect(self.checkStudentLogin)
 
         # 로그아웃 버튼 누르면 로그아웃 하고 로그인 페이지로 돌아감
-        self.btn_studentLogout.clicked.connect(self.student_logout)
+        self.btn_Logout1.clicked.connect(self.student_logout)   # 교수 위젯 로그아웃
+        self.btn_Logout2.clicked.connect(self.student_logout)   # 학생 위젯 로그아웃
+        self.btn_Logout3.clicked.connect(self.student_logout)   # 일정 위젯에서 로그아웃
 
         # self.studentORprofessor_widget.
 
@@ -50,28 +52,121 @@ class Bcorn(QWidget, form_class):
         self.btn_leave2.clicked.connect(self.method_leave)
 
         # ---------------- 일정 위젯 ----------------
+        # 일정 보기 버튼 누르면 일정위젯으로 이동하는 메소드 실행
         self.btn_showChalendar.clicked.connect(self.move_scheduleWidget)
+        # 일정 추가 버튼 누르면 DB에 일정 추가해주는 메소드 실행
+        self.btn_addSchedule.clicked.connect(self.method_addSchedule)
+        # 일정 삭제 버튼 누르면 DB의 일정 삭제해주는 메소드 실행
+        self.btn_deleteSchedule.clicked.connect(self.method_deleteSchedule)
+
+        # 캘린더 선택하면 선택한 날짜에 있는 일정 보여주는 메소드 실행
+        self.cw_schedule.clicked.connect(self.method_showSchedule)
 
     # ---------------- 일정 메서드 ----------------
+    # 일정 위젯으로 이동하는 메서드
     def move_scheduleWidget(self):
+        self.HRD_Widget.setCurrentIndex(3)
+
+    # 일정 삭제하는 메소드
+    def method_deleteSchedule(self):
+        print()
         pass
+
+    # 일정 추가하는 메소드
+    def method_addSchedule(self):
+        # 쿼리문으로 전달할 일정 데이터 문자열로 저장 test_addNo1Schedule
+        schedule = self.led_addSchedule.text()
+
+        # 일정 안적으면 일정 추가 못함
+        if not bool(schedule):
+            QMessageBox.information(self, '공백 오류', '일정을 입력해주세요')
+        # 일정 적어야 일정 추가 기닁 돌아감
+        else:
+            # 캘린더에서 선택한 날짜 가져와서 date 변수에 넣어주기
+            selectDay = self.cw_schedule.selectedDate().toString('yyMMdd')
+
+            # DB 연결하기
+            src_db = pymysql.connect(host='10.10.21.102', user='local', password='0000', db='b-corn', charset='utf8')
+            # DB와 상호작용하기 위해 연결해주는 cursor 객체 만듬
+            cur_corn = src_db.cursor()
+
+            # 오늘 날짜와 로그인한 사람의 이름, 일정내용을 DB에 넣고싶어
+            sql = f"INSERT INTO schedule_test VALUES('{selectDay}', '{self.account[1]}', '{schedule}')"
+
+            # execute 메서드로 db에 sql 문장 전송
+            cur_corn.execute(sql)
+            # 쿼리문 실행!
+            src_db.commit()
+
+            # DB 닫아주기
+            src_db.close()
+            print(f'"{schedule}"을 일정에 넣었습니다')
+
+            # 사용자에게 입력 완료했다고 알려주는 메세지 박스 출력
+            QMessageBox.information(self, '입력 완료', '일정 입력하셨습니다')
+
+            # 입력하고 나서 라인에디트 지워주기
+            self.led_addSchedule.clear()
+
+            # 입력한 일정 보여주기
+            self.method_showSchedule()
+
+    # 선택한 날짜의 일정을 보여주는 메소드
+    def method_showSchedule(self):
+
+        self.list_scheduleWriter.clear()        # 작성한 리스트 위젯 지워주기
+        self.lbw_dailySchedule.clear()          # 작성한 리스트 위젯 지워주기
+        self.tb_selectDate.clear()              # 작성한 선택날짜 텍스트브라우저 지워주기
+
+        # 선택한 날짜 yyMMdd 형식으로 저장
+        selectDay = self.cw_schedule.selectedDate().toString('yyMMdd')
+
+        # DB 열기
+        src_db = pymysql.connect(host='10.10.21.102', user='local', password='0000', db='b-corn', charset='utf8')
+        # DB와 상호작용하기 위해 연결해주는 cursor 객체 만듬
+        cur_corn = src_db.cursor()
+
+        # 선택한 날짜의 일정(작성자)을 가져오고 싶어
+        sql = f"SELECT 작성자, 일정 FROM schedule_test WHERE 날짜 = {selectDay}"
+
+        # execute 메서드로 db에 sql 문장 전송
+        cur_corn.execute(sql)
+        schedule_data = cur_corn.fetchall()  # 오늘 로그인한 사람의 출석 상황 정보 저장(2중튜플)
+        # DB 닫아주기
+        src_db.close()
+
+        print(schedule_data)
+
+        self.tb_selectDate.setText(self.cw_schedule.selectedDate().toString('yy년MM월dd일'))
+        # 작성자 리스트 위젯에 넣기
+        for i in schedule_data:
+            self.list_scheduleWriter.addItem(i[0])
+
+        # 일정 내용 리스트 위젯에 넣기
+        for i in schedule_data:
+            self.lbw_dailySchedule.addItem(i[1])
 
     # ---------------- 출석 메서드 ----------------
     # 출석 상태 확인 메서드(로그인 후 실행)
     def check_attandance(self):
+        #오늘 날짜 구하기
+        date = QDate.currentDate()
+        nowdate = date.toString('yyMMdd')
+
         # DB를 열고 오늘 접속한 회원의 출석상태 확인
         src_db = pymysql.connect(host='10.10.21.102', user='local', password='0000', db='b-corn', charset='utf8')
         # DB와 상호작용하기 위해 연결해주는 cursor 객체 만듬
         cur_corn = src_db.cursor()
 
         # 오늘 로그인한 사람의 출석 상황을 보고싶어
-        sql = f"SELECT * FROM test_attandance WHERE 학생번호 = {self.account[0]}"
+        sql = f"SELECT * FROM test_attandance WHERE 번호 = {self.account[0]} AND 날짜 = {nowdate}"
 
         # execute 메서드로 db에 sql 문장 전송
         cur_corn.execute(sql)
         attandance = cur_corn.fetchall()      # 오늘 로그인한 사람의 출석 상황 정보 저장(2중튜플)
         # DB 닫아주기
         src_db.close()
+
         # print(str(attandance[0][-1])) print(attandance)
         if bool(attandance):
             # 입실한 상태이면 외출 / 퇴실 위젯이 뜨게 함
@@ -129,7 +224,7 @@ class Bcorn(QWidget, form_class):
             cur_corn = src_db.cursor()
 
             # 오늘 날짜와 로그인한 사람의 학생번호, 입실시간을 DB에 넣고싶어
-            sql = f"INSERT INTO test_attandance(날짜, 학생번호, 입실시간)" \
+            sql = f"INSERT INTO test_attandance(날짜, 번호, 입실시간)" \
                   f"VALUES({nowDate}, {student_num}, {nowTime})"
 
             # execute 메서드로 db에 sql 문장 전송
@@ -168,7 +263,7 @@ class Bcorn(QWidget, form_class):
             cur_corn = src_db.cursor()
 
             # 외출 시간을 그 사람이 입실한 날짜와 학생번호가 일치하는 row에 업데이트 하고 싶어
-            sql = f"UPDATE test_attandance SET 외출시간 = {nowTime} WHERE (날짜 = {nowDate}) AND (학생번호 = {student_num})"
+            sql = f"UPDATE test_attandance SET 외출시간 = {nowTime} WHERE (날짜 = {nowDate}) AND (번호 = {student_num})"
 
             # execute 메서드로 db에 sql 문장 전송
             cur_corn.execute(sql)
@@ -206,7 +301,7 @@ class Bcorn(QWidget, form_class):
             cur_corn = src_db.cursor()
 
             # 복귀 시간을 그 사람이 입실한 날짜와 학생번호가 일치하는 row에 업데이트 하고 싶어
-            sql = f"UPDATE test_attandance SET 복귀시간 = {nowTime} WHERE (날짜 = {nowDate}) AND (학생번호 = {student_num})"
+            sql = f"UPDATE test_attandance SET 복귀시간 = {nowTime} WHERE (날짜 = {nowDate}) AND (번호 = {student_num})"
 
             # execute 메서드로 db에 sql 문장 전송
             cur_corn.execute(sql)
@@ -244,7 +339,7 @@ class Bcorn(QWidget, form_class):
             cur_corn = src_db.cursor()
 
             # 퇴실 시간을 그 사람이 입실한 날짜와 학생번호가 일치하는 row에 업데이트 하고, 출석했으면 대문자 O를 넣고 싶어
-            sql = f"UPDATE test_attandance SET 퇴실시간 = {nowTime}, 출석 = 'O'  WHERE (날짜 = {nowDate}) AND (학생번호 = {student_num})"
+            sql = f"UPDATE test_attandance SET 퇴실시간 = {nowTime}, 출결 = '출석' WHERE (날짜 = {nowDate}) AND (번호 = {student_num})"
 
             # execute 메서드로 db에 sql 문장 전송
             cur_corn.execute(sql)
@@ -340,18 +435,17 @@ class Bcorn(QWidget, form_class):
 
     # 출석 상태 하단에 보여주기 메서드
     def show_attandance(self):
-        출석 = str(self.account[-5])
-        지각 = str(self.account[-4])
-        조퇴 = str(self.account[-3])
-        외출 = str(self.account[-2])
-        결석 = str(self.account[-1])
+        attandance = str(self.account[-5])
+        late = str(self.account[-4])
+        earlyLeave = str(self.account[-3])
+        goingout = str(self.account[-2])
+        absent = str(self.account[-1])
 
-        self.circle_attandance.setText(출석)
-
-        self.circle_late.setText(지각)
-        self.circle_earlyLeave.setText(조퇴)
-        self.circle_goingout.setText(외출)
-        self.circle_absent.setText(결석)
+        self.circle_attandance.setText(attandance)
+        self.circle_late.setText(late)
+        self.circle_earlyLeave.setText(earlyLeave)
+        self.circle_goingout.setText(goingout)
+        self.circle_absent.setText(absent)
 
     # ---------------- 로그인 메서드 ----------------
     # 메인 화면에서 로그아웃버튼을 누르면 로그인 창으로 되돌아옴
