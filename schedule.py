@@ -36,8 +36,8 @@ class Bcorn(QWidget, form_class):
         cur_corn = src_db.cursor()
 
         # 오늘 날짜와 로그인한 사람의 학생번호, 입실시간을 DB에 넣고싶어
-        sql = f"INSERT INTO test_attandance(날짜, 학생번호, 입실시간)" \
-              f"VALUES({nowDate}, {student_num}, {nowTime})"
+        sql = f"INSERT INTO test_attandance(날짜, 번호, 입실시간) VALUES({nowDate}, {student_num}, {nowTime})"
+
 
         # execute 메서드로 db에 sql 문장 전송
         cur_corn.execute(sql)
@@ -45,7 +45,7 @@ class Bcorn(QWidget, form_class):
         src_db.commit()
         # DB 닫아주기
         src_db.close()
-        pass
+
 
     # (나중에 추가할 기능 선택한 날짜의)일정 작성자 리스트를 나열
     def show_scheduleWriter(self):
