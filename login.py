@@ -35,7 +35,7 @@ class Bcorn(QWidget, form_class):
         self.led_professorPW.returnPressed.connect(self.checkProfessorLogin)
 
         # 로그아웃 버튼 누르면 로그아웃 하고 로그인 페이지로 돌아감
-        self.btn_Logout1.clicked.connect(self.student_logout)   # 교수 위젯 로그아웃
+        self.btn_Logout1.clicked.connect(self.professor_logout)   # 교수 위젯 로그아웃
         self.btn_Logout2.clicked.connect(self.student_logout)   # 학생 위젯 로그아웃
         self.btn_Logout3.clicked.connect(self.student_logout)   # 일정 위젯에서 로그아웃
 
@@ -74,6 +74,63 @@ class Bcorn(QWidget, form_class):
 
         # 캘린더 선택하면 선택한 날짜에 있는 일정 보여주는 메소드 실행
         self.cw_schedule.clicked.connect(self.method_showSchedule)
+
+        # ---------------- 관리자 위젯 ----------------
+        # 테이블 위젯의 컬럼 길이 정하기
+        self.tbw_checkAttandance.setColumnWidth(0, 60)
+        self.tbw_checkAttandance.setColumnWidth(1, 76)
+        self.tbw_checkAttandance.setColumnWidth(2, 76)
+        self.tbw_checkAttandance.setColumnWidth(3, 76)
+        self.tbw_checkAttandance.setColumnWidth(4, 76)
+        self.tbw_checkAttandance.setColumnWidth(5, 50)
+
+        # 캘린더 선택하면 선택한 날짜의 출결 상황 보여줌
+        self.cw_checkAttadance.clicked.connect(self.method_showtoProfessorAttandance)
+
+        # 출결 정산 버튼 누르면 정산 메서드 실행
+        self.btn_calculateAttandance.clicked.connect(self.method_calculateAttandance)
+
+    # ---------------- 관리자 메서드 ----------------
+    # 선택한 날짜의 출결 상황 보여주는 메소드
+    def method_showtoProfessorAttandance(self):
+        # 테이블 위젯 초기화
+        self.tbw_checkAttandance.clear()
+        # 테이블 위젯의 헤더 이름 정해주기 (초기화하니까 헤더이름까지 초기화가 되어버림;;)
+        self.tbw_checkAttandance.setHorizontalHeaderLabels(['이름', '입실', '외출', '복귀', '퇴실', '출결'])
+
+        # 선택한 날짜 변수에 저장하기
+        selectDay = self.cw_checkAttadance.selectedDate().toString('yyMMdd')
+
+        # DB 열기
+        src_db = pymysql.connect(host='10.10.21.102', user='local', password='0000', db='b-corn', charset='utf8')
+        # DB와 상호작용하기 위해 연결해주는 cursor 객체 만듬
+        cur_corn = src_db.cursor()
+
+        # 선택한 날짜의 출석 정보를 가져오고 싶어.(join의 이해도가 낮아서 이렇게 쓰는게 맞나 싶다)
+        sql = f"""SELECT 이름, 입실시간, 외출시간, 복귀시간, 퇴실시간, 출결 FROM test_attandance
+                  JOIN student_test
+                  ON test_attandance.번호 = student_test.번호
+                  WHERE 날짜 = '{selectDay}'"""
+
+        # execute 메서드로 db에 sql 문장 전송
+        cur_corn.execute(sql)
+        attandance_data = cur_corn.fetchall()  # 오늘 로그인한 사람의 출석 상황 정보 저장(2중튜플)
+        # DB 닫아주기
+        src_db.close()
+
+        if not bool(attandance_data):
+            QMessageBox.information(self, '일정 오류', '출석 정보가 없습니다.')
+        else:
+            self.tbw_checkAttandance.setRowCount(len(attandance_data))  # 테이블 위젯 ui의 행 길이 정해줌(가로줄)
+
+            # 작성자 리스트 위젯에 넣기
+            for i in range(len(attandance_data)):
+                for j in range(len(attandance_data[i])):
+                    self.tbw_checkAttandance.setItem(i, j, QTableWidgetItem(str(attandance_data[i][j])))
+
+    # 출결 정산 메서드
+    def method_calculateAttandance(self):
+        pass
 
     # ---------------- 일정 메서드 ----------------
     # 일정 수정하는 메소드
@@ -569,7 +626,15 @@ class Bcorn(QWidget, form_class):
             self.account = professor_account[0]  # 2중 튜플이 아닌 일반 1중 튜플로 학생 회원 정보 저장
             self.accept_professorLogin()  # 로그인 허용 함수(교수) 실행
 
-    # 메인 화면에서 로그아웃버튼을 누르면 로그인 창으로 되돌아옴
+    # 메인 화면에서 로그아웃버튼을 누르면 로그인 창으로 되돌아옴(교수)
+    def professor_logout(self):
+        self.HRD_Widget.setCurrentIndex(0)
+        # 출석정보 테이블 초기화
+        self.tbw_checkAttandance.clear()
+        # 테이블 위젯의 헤더 이름 정해주기 (초기화하니까 헤더이름까지 초기화가 되어버림;;)
+        self.tbw_checkAttandance.setHorizontalHeaderLabels(['이름', '입실', '외출', '복귀', '퇴실', '출결'])
+
+    # 메인 화면에서 로그아웃버튼을 누르면 로그인 창으로 되돌아옴(학생)
     def student_logout(self):
         self.HRD_Widget.setCurrentIndex(0)
         self.schedule_btnWidget.setCurrentIndex(0)
