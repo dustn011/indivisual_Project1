@@ -29,6 +29,11 @@ class Bcorn(QWidget, form_class):
         # 학생 비밀번호 입력 라인에디터에서 엔터키 누르면 checkStudentLogin 함수 실행. 로그인 확인 후 승인 or 거절
         self.led_studentPW.returnPressed.connect(self.checkStudentLogin)
 
+        # 교수 로그인 버튼을 클릭하면 checkprofessorLogin 함수 실행. 로그인 확인 후 승인 or 거절
+        self.btn_professorLogin.clicked.connect(self.checkProfessorLogin)
+        # 교수 비밀번호 입력 라인에디터에서 엔터키 누르면 checkprofessorLogin 함수 실행. 로그인 확인 후 승인 or 거절
+        self.led_professorPW.returnPressed.connect(self.checkProfessorLogin)
+
         # 로그아웃 버튼 누르면 로그아웃 하고 로그인 페이지로 돌아감
         self.btn_Logout1.clicked.connect(self.student_logout)   # 교수 위젯 로그아웃
         self.btn_Logout2.clicked.connect(self.student_logout)   # 학생 위젯 로그아웃
@@ -37,7 +42,6 @@ class Bcorn(QWidget, form_class):
         # self.studentORprofessor_widget.
 
         # ---------------- 출석 위젯 ----------------
-
         # 입실 버튼 누르면 메소드 실행(출석 체크 시작)
         self.btn_present.clicked.connect(self.method_present)
 
@@ -53,7 +57,9 @@ class Bcorn(QWidget, form_class):
 
         # ---------------- 일정 위젯 ----------------
         # 일정 보기 버튼 누르면 일정위젯으로 이동하는 메소드 실행
-        self.btn_showChalendar.clicked.connect(self.move_scheduleWidget)
+        self.btn_showChalendar.clicked.connect(lambda method_moveScheduleWidget: self.HRD_Widget.setCurrentIndex(3))
+        # 메인 화면 버튼 누르면 출석 위젯으로 이동하기(람다 처음 써보는데 너무 신기함)
+        self.btn_moveAttandance.clicked.connect(lambda method_moveAttandane: self.HRD_Widget.setCurrentIndex(2))
 
         # 일정 추가 버튼 누르면 DB에 일정 추가해주는 메소드 실행
         self.btn_addSchedule.clicked.connect(self.method_addSchedule)
@@ -63,17 +69,13 @@ class Bcorn(QWidget, form_class):
         self.btn_chagneSchedule.clicked.connect(self.method_changeSchedule)
 
         # 테이블 위젯의 컬럼 길이 정하기
-        self.tw_schedule.setColumnWidth(0, 90)      # 첫 번째 컬럼은 90px
-        self.tw_schedule.setColumnWidth(1, 277)     # 두 번째 컬럼은 300px
+        self.tw_schedule.setColumnWidth(0, 90)      # 첫 번째 컬럼 너비는 90px
+        self.tw_schedule.setColumnWidth(1, 277)     # 두 번째 컬럼 너비는 300px
 
         # 캘린더 선택하면 선택한 날짜에 있는 일정 보여주는 메소드 실행
         self.cw_schedule.clicked.connect(self.method_showSchedule)
 
     # ---------------- 일정 메서드 ----------------
-    # 일정 위젯으로 이동하는 메서드
-    def move_scheduleWidget(self):
-        self.HRD_Widget.setCurrentIndex(3)
-
     # 일정 수정하는 메소드
     def method_changeSchedule(self):
         if not bool(self.tw_schedule.selectedItems()):
@@ -239,7 +241,7 @@ class Bcorn(QWidget, form_class):
     # ---------------- 출석 메서드 ----------------
     # 출석 상태 확인 메서드(로그인 후 실행)
     def check_attandance(self):
-        #오늘 날짜 구하기
+        # 오늘 날짜 구하기
         date = QDate.currentDate()
         nowdate = date.toString('yyMMdd')
 
@@ -539,6 +541,34 @@ class Bcorn(QWidget, form_class):
         self.circle_absent.setText(absent)
 
     # ---------------- 로그인 메서드 ----------------
+    # DB에서 ID, PW 정보 가져와서 입력한 ID, PW와 대조하기(교수)
+    def checkProfessorLogin(self):
+        checking_id = self.led_professorID.text()
+        checking_pw = self.led_professorPW.text()
+
+        # DB 연결하기
+        src_db = pymysql.connect(host='10.10.21.102', user='local', password='0000', db='b-corn', charset='utf8')
+        # DB와 상호작용하기 위해 연결해주는 cursor 객체 만듬
+        cur_corn = src_db.cursor()
+
+        # 회원정보의 ID가 checking_id이고 PW는 checking_pw인 사람의 정보를 교수 데이터에서 찾고 싶어
+        professor_sql = f"SELECT * FROM professor_test WHERE (아이디 = '{checking_id}') AND (비밀번호 = '{checking_pw}')"  # test용 임시 데이터 만듬(수정 할 것)
+        # execute 메서드로 db에 student_sql 문장 전송
+        cur_corn.execute(professor_sql)
+        # 전체 나열 함수, 레코드를 배열(튜플) 형식으로 저장해준다(fetch : 나열하다 정렬하다)
+        professor_account = cur_corn.fetchall()  # 로그인 하는 account 계정 정보 저장(2중튜플)
+
+        # DB 닫아주기
+        src_db.close()
+
+        # 로그인, 비밀번호 틀렸을 시 student_account에는 빈 튜플만 저장됨
+        if not bool(professor_account):
+            self.reject_Login()  # 로그인 거절 함수 실행
+            print('로그인 실패')
+        else:
+            self.account = professor_account[0]  # 2중 튜플이 아닌 일반 1중 튜플로 학생 회원 정보 저장
+            self.accept_professorLogin()  # 로그인 허용 함수(교수) 실행
+
     # 메인 화면에서 로그아웃버튼을 누르면 로그인 창으로 되돌아옴
     def student_logout(self):
         self.HRD_Widget.setCurrentIndex(0)
@@ -571,11 +601,22 @@ class Bcorn(QWidget, form_class):
 
         # 로그인, 비밀번호 틀렸을 시 student_account에는 빈 튜플만 저장됨
         if not bool(student_account):
-            self.reject_studentLogin()     # 로그인 거절 함수 실행
+            self.reject_Login()     # 로그인 거절 함수 실행
             print('로그인 실패')
         else:
             self.account = student_account[0]  # 2중 튜플이 아닌 일반 1중 튜플로 학생 회원 정보 저장
             self.accept_studentLogin()     # 로그인 허용 함수 실행
+
+    # 교수계정 로그인 성공했을 때 실행하는 메서드
+    def accept_professorLogin(self):
+        print('로그인 성공')
+        # 위젯의 2페이지로 넘어감
+        self.HRD_Widget.setCurrentIndex(1)
+        # 아이디, 비밀번호 입력한 라인에디터 박스 초기화
+        self.led_professorID.clear()
+        self.led_professorPW.clear()
+
+        print(self.account)
 
     # 로그인 성공 시 실행하는 함수(학생)
     def accept_studentLogin(self):
@@ -594,12 +635,14 @@ class Bcorn(QWidget, form_class):
         self.show_attandance()
 
     # 로그인 실패 시 실행하는 함수(학생)
-    def reject_studentLogin(self):
+    def reject_Login(self):
         # 입력 실패 안내 문구 출력함
         QMessageBox.information(self, '입력 오류', '아이디나 비밀번호가 틀리셨습니다\n다시 입력해주세요')
         # 아이디, 비밀번호 입력한 라인에디터 박스 초기화(다시써)
         self.led_studentID.clear()
         self.led_studentPW.clear()
+        self.led_professorID.clear()
+        self.led_professorPW.clear()
 
 
 if __name__ == "__main__":
