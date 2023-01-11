@@ -54,10 +54,17 @@ class Bcorn(QWidget, form_class):
         # ---------------- 일정 위젯 ----------------
         # 일정 보기 버튼 누르면 일정위젯으로 이동하는 메소드 실행
         self.btn_showChalendar.clicked.connect(self.move_scheduleWidget)
+
         # 일정 추가 버튼 누르면 DB에 일정 추가해주는 메소드 실행
         self.btn_addSchedule.clicked.connect(self.method_addSchedule)
         # 일정 삭제 버튼 누르면 DB의 일정 삭제해주는 메소드 실행
         self.btn_deleteSchedule.clicked.connect(self.method_deleteSchedule)
+        # 일정 수정 버튼 누르면 DB의 일정 수정해주는 메소드 실행
+        self.btn_chagneSchedule.clicked.connect(self.method_changeSchedule)
+
+        # 테이블 위젯의 컬럼 길이 정하기
+        self.tw_schedule.setColumnWidth(0, 90)      # 첫 번째 컬럼은 90px
+        self.tw_schedule.setColumnWidth(1, 277)     # 두 번째 컬럼은 300px
 
         # 캘린더 선택하면 선택한 날짜에 있는 일정 보여주는 메소드 실행
         self.cw_schedule.clicked.connect(self.method_showSchedule)
@@ -67,10 +74,94 @@ class Bcorn(QWidget, form_class):
     def move_scheduleWidget(self):
         self.HRD_Widget.setCurrentIndex(3)
 
+    # 일정 수정하는 메소드
+    def method_changeSchedule(self):
+        if not bool(self.tw_schedule.selectedItems()):
+            QMessageBox.information(self, '선택 오류', '수정할 일정을 선택 해주세요')
+        else:
+            # 선택한 일정 정보 변수에 저장하기
+            select_name = self.tw_schedule.selectedItems()[0].text()  # 이름 정보 저장
+            # 수정할 정보 변수에 저장하기
+            change_schedule = self.led_addSchedule.text()
+
+            # 본인이 작성한게 아니면 수정 불가
+            if select_name != self.account[1]:
+                QMessageBox.information(self, '수정 불가', '본인이 작성한 일정만 수정할 수 있습니다')
+            elif not bool(change_schedule):
+                QMessageBox.information(self, '수정 불가', '수정할 내용을 입력해주세요')
+            else:
+                select_schedule = self.tw_schedule.selectedItems()[1].text()  # 일정 정보 저장
+
+                # 캘린더에서 선택한 날짜 가져와서 date 변수에 넣어주기
+                selectDay = self.cw_schedule.selectedDate().toString('yyMMdd')
+
+                # DB 연결하기
+                src_db = pymysql.connect(host='10.10.21.102', user='local', password='0000', db='b-corn',
+                                         charset='utf8')
+                # DB와 상호작용하기 위해 연결해주는 cursor 객체 만듬
+                cur_corn = src_db.cursor()
+
+                # 선택한 날짜의 내가 작성한 내용을 삭제하고 싶어(update로 일정 null로 바꿔주기, 왜이렇게 햇냐면 delete 안쓰고 싶어서)
+                sql = f"""UPDATE schedule_test SET 일정 = '{change_schedule}'
+                          WHERE (날짜 = '{selectDay}') AND (작성자 = '{self.account[1]}') AND (일정 = '{select_schedule}')"""
+
+                # execute 메서드로 db에 sql 문장 전송
+                cur_corn.execute(sql)
+
+                # 쿼리문 실행!
+                src_db.commit()
+
+                # DB 닫아주기
+                src_db.close()
+
+                # 일정 삭제했다고 보여주기
+                print(f'일정을 수정했습니다')
+                QMessageBox.information(self, '수정 완료', '일정을 수정했습니다')
+
+                # 일정 다시 보여주기
+                self.method_showSchedule()
+
     # 일정 삭제하는 메소드
     def method_deleteSchedule(self):
-        print()
-        pass
+        if not bool(self.tw_schedule.selectedItems()):
+            QMessageBox.information(self, '선택 오류', '삭제할 일정을 선택 해주세요')
+        else:
+            # 선택한 일정 정보 변수에 저장하기
+            select_name = self.tw_schedule.selectedItems()[0].text()        # 이름 정보 저장
+
+            # 본인이 작성한게 아니면 삭제 불가
+            if select_name != self.account[1]:
+                QMessageBox.information(self, '삭제 불가', '본인이 작성한 일정만 삭제할 수 있습니다')
+            else:
+                select_schedule = self.tw_schedule.selectedItems()[1].text()    # 일정 정보 저장
+
+                # 캘린더에서 선택한 날짜 가져와서 date 변수에 넣어주기
+                selectDay = self.cw_schedule.selectedDate().toString('yyMMdd')
+
+                # DB 연결하기
+                src_db = pymysql.connect(host='10.10.21.102', user='local', password='0000', db='b-corn', charset='utf8')
+                # DB와 상호작용하기 위해 연결해주는 cursor 객체 만듬
+                cur_corn = src_db.cursor()
+
+                # 선택한 날짜의 내가 작성한 내용을 삭제하고 싶어(update로 일정 null로 바꿔주기, 왜이렇게 햇냐면 delete 안쓰고 싶어서)
+                sql = f"""UPDATE schedule_test SET 일정 = null
+                          WHERE (날짜 = '{selectDay}') AND (작성자 = '{self.account[1]}') AND (일정 = '{select_schedule}')"""
+
+                # execute 메서드로 db에 sql 문장 전송
+                cur_corn.execute(sql)
+
+                # 쿼리문 실행!
+                src_db.commit()
+
+                # DB 닫아주기
+                src_db.close()
+
+                # 일정 삭제했다고 보여주기
+                print(f'일정을 삭제했습니다')
+                QMessageBox.information(self, '삭제 완료', '일정을 삭제했습니다')
+
+                # 일정 다시 보여주기
+                self.method_showSchedule()
 
     # 일정 추가하는 메소드
     def method_addSchedule(self):
@@ -113,10 +204,11 @@ class Bcorn(QWidget, form_class):
 
     # 선택한 날짜의 일정을 보여주는 메소드
     def method_showSchedule(self):
+        self.tw_schedule.clear()            # 테이블 위젯 초기화
+        self.tb_selectDate.clear()          # 선택날짜 텍스트브라우저 초기화
 
-        self.list_scheduleWriter.clear()        # 작성한 리스트 위젯 지워주기
-        self.lbw_dailySchedule.clear()          # 작성한 리스트 위젯 지워주기
-        self.tb_selectDate.clear()              # 작성한 선택날짜 텍스트브라우저 지워주기
+        # 테이블 위젯의 헤더 이름 정해주기 (초기화하니까 헤더이름까지 초기화가 되어버림;;)
+        self.tw_schedule.setHorizontalHeaderLabels(['작성자', '일정'])
 
         # 선택한 날짜 yyMMdd 형식으로 저장
         selectDay = self.cw_schedule.selectedDate().toString('yyMMdd')
@@ -126,8 +218,8 @@ class Bcorn(QWidget, form_class):
         # DB와 상호작용하기 위해 연결해주는 cursor 객체 만듬
         cur_corn = src_db.cursor()
 
-        # 선택한 날짜의 일정(작성자)을 가져오고 싶어
-        sql = f"SELECT 작성자, 일정 FROM schedule_test WHERE 날짜 = {selectDay}"
+        # 선택한 날짜의 일정(작성자)을 가져오고 싶어. 일정에 null이 들어가 있는건 안불러올래
+        sql = f"SELECT 작성자, 일정 FROM schedule_test WHERE (날짜 = {selectDay}) AND (일정 is not null)"
 
         # execute 메서드로 db에 sql 문장 전송
         cur_corn.execute(sql)
@@ -135,16 +227,14 @@ class Bcorn(QWidget, form_class):
         # DB 닫아주기
         src_db.close()
 
-        print(schedule_data)
-
         self.tb_selectDate.setText(self.cw_schedule.selectedDate().toString('yy년MM월dd일'))
-        # 작성자 리스트 위젯에 넣기
-        for i in schedule_data:
-            self.list_scheduleWriter.addItem(i[0])
 
-        # 일정 내용 리스트 위젯에 넣기
-        for i in schedule_data:
-            self.lbw_dailySchedule.addItem(i[1])
+        self.tw_schedule.setRowCount(len(schedule_data))  # 테이블 위젯 ui의 행 길이 정해줌(가로줄)
+
+        # 작성자 리스트 위젯에 넣기
+        for i in range(len(schedule_data)):
+            for j in range(len(schedule_data[i])):
+                self.tw_schedule.setItem(i, j, QTableWidgetItem(schedule_data[i][j]))
 
     # ---------------- 출석 메서드 ----------------
     # 출석 상태 확인 메서드(로그인 후 실행)
@@ -348,6 +438,7 @@ class Bcorn(QWidget, form_class):
             # DB 닫아주기
             src_db.close()
 
+    # ---------------- 데이터 카운트 메서드 ----------------
     # 지각이면 지각 데이터 카운트 추가 메서드
     def method_lateCount(self):
         # DB 연결하기
