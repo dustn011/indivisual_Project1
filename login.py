@@ -3,6 +3,7 @@ import sys
 from PyQt5.QtWidgets import *
 from PyQt5 import uic
 from PyQt5.QtCore import QTime, QDate
+from datetime import timedelta
 
 # ui 클래스
 form_class = uic.loadUiType("ui/main.ui")[0]
@@ -114,23 +115,80 @@ class Bcorn(QWidget, form_class):
 
         # execute 메서드로 db에 sql 문장 전송
         cur_corn.execute(sql)
-        attandance_data = cur_corn.fetchall()  # 오늘 로그인한 사람의 출석 상황 정보 저장(2중튜플)
+        self.attandance_data = cur_corn.fetchall()  # 오늘 로그인한 사람의 출석 상황 정보 저장(2중튜플)
         # DB 닫아주기
         src_db.close()
 
-        if not bool(attandance_data):
+        # sql문으로 가져온 출석 정보가 없으면 메세지 박스 출력
+        if not bool(self.attandance_data):
             QMessageBox.information(self, '일정 오류', '출석 정보가 없습니다.')
         else:
-            self.tbw_checkAttandance.setRowCount(len(attandance_data))  # 테이블 위젯 ui의 행 길이 정해줌(가로줄)
+            self.tbw_checkAttandance.setRowCount(len(self.attandance_data))  # 테이블 위젯 ui의 행 길이 정해줌(가로줄)
+            # 출석 정보 테이블 위젯에 넣기
+            for i in range(len(self.attandance_data)):
+                for j in range(len(self.attandance_data[i])):
+                    self.tbw_checkAttandance.setItem(i, j, QTableWidgetItem(str(self.attandance_data[i][j])))
 
-            # 작성자 리스트 위젯에 넣기
-            for i in range(len(attandance_data)):
-                for j in range(len(attandance_data[i])):
-                    self.tbw_checkAttandance.setItem(i, j, QTableWidgetItem(str(attandance_data[i][j])))
-
-    # 출결 정산 메서드
+    # 출결 정산 메서드 ※ datetime 타입은 datetime 타입끼리만 연산, 비교 가능하다
     def method_calculateAttandance(self):
-        print('출결정산버튼 누름')
+        # 출석 정보가 있을 때
+        if bool(self.attandance_data):
+            # 정산 안되있을 때만 돌아가게 함
+            if self.attandance_data[0][-1] == 'X':
+                # 선택한 날짜 변수에 저장하기
+                selectDay = self.cw_checkAttadance.selectedDate().toString('yyMMdd')
+                number = 0
+                # 한 명 한 명 출결 관리 for문으로 돌림(출결 정산)
+                for person in self.attandance_data:
+                    number += 1
+                    # 입실 데이터 없거나, 퇴실 데이터 없으면 결석, 수업시간 4시간 이하면 결석
+                    if not bool(person[1]) or not bool(person[-2]) or ((person[-2]-person[1]) < timedelta(hours=4)):
+                        self.method_attandanceCount('결석', number, selectDay)
+                    # 16:50:00 이전에 퇴실 찍으면 조퇴
+                    elif person[-2] < timedelta(hours=16, minutes=50):
+                        self.method_attandanceCount('조퇴', number, selectDay)
+                    # 외출 데이터 있으면 외출
+                    elif bool(person[2]):
+                        # 실질 학습 시간 4시간 아래면 결석
+                        if (person[4]-person[3]+person[2]-person[1]) < timedelta(hours=4):
+                            self.method_attandanceCount('결석', number, selectDay)
+                        # 무사히 외출하고 복귀하면 외출로 처리
+                        else:
+                            self.method_attandanceCount('외출', number, selectDay)
+                    # 9시 20분 59초 이후에 입실 찍으면 지각
+                    elif person[1] > timedelta(hours=9, minutes=20, seconds=59):
+                        self.method_attandanceCount('지각', number, selectDay)
+                    else:
+                        self.method_attandanceCount('출석', number, selectDay)
+
+            else:
+                QMessageBox.information(self, '정산 오류', '정산을 마치셨습니다')
+        else:
+            QMessageBox.information(self, '출결 오류', '출결 정보가 없습니다.')
+
+    # 출결 상태 DB에서 바꿔주는 메서드 근데 한 명 출결상태 바꿔줄 때마다 데이터 열고 닫고 하는게 맞을까...? 한꺼번에 할 순 없나...?
+    def method_attandanceCount(self, attandance, number, selectDay):
+        # DB 연결하기
+        src_db = pymysql.connect(host='10.10.21.102', user='local', password='0000', db='b-corn', charset='utf8')
+        # DB와 상호작용하기 위해 연결해주는 cursor 객체 만듬
+        cur_corn = src_db.cursor()
+
+        # 선택한 날의 학생의 출결 상태를 원하는 상태로 바꾸고 싶어
+        sql = f"UPDATE test_attandance SET 출결 = '{attandance}' WHERE 번호 = {number} and 날짜 = {selectDay}"
+        # 업데이트 되는 출결 항목을 +1 해주고 싶어
+        student_sql = f"UPDATE student_test SET {attandance} = {attandance} + 1 WHERE 번호 = {number}"
+
+        # execute 메서드로 db에 sql 문장 전송
+        cur_corn.execute(sql)
+        cur_corn.execute(student_sql)
+        # 쿼리문 실행!
+        src_db.commit()
+
+        # DB 닫아주기
+        src_db.close()
+
+        # 다시 업데이트된 내용 테이블 위젯 보여주기
+        self.method_showtoProfessorAttandance()
 
     # ---------------- 일정 메서드 ----------------
     # 일정 수정하는 메소드
@@ -373,8 +431,9 @@ class Bcorn(QWidget, form_class):
             cur_corn = src_db.cursor()
 
             # 오늘 날짜와 로그인한 사람의 학생번호, 입실시간을 DB에 넣고싶어
-            sql = f"INSERT INTO test_attandance(날짜, 번호, 입실시간)" \
-                  f"VALUES({nowDate}, {student_num}, {nowTime})"
+            sql = f"""UPDATE test_attandance
+                      SET 입실시간 = {nowTime}
+                      WHERE 날짜 = {nowDate} and 번호 = {student_num}"""
 
             # execute 메서드로 db에 sql 문장 전송
             cur_corn.execute(sql)
@@ -488,7 +547,7 @@ class Bcorn(QWidget, form_class):
             cur_corn = src_db.cursor()
 
             # 퇴실 시간을 그 사람이 입실한 날짜와 학생번호가 일치하는 row에 업데이트 하고, 출석했으면 대문자 O를 넣고 싶어
-            sql = f"UPDATE test_attandance SET 퇴실시간 = {nowTime}, 출결 = '출석' WHERE (날짜 = {nowDate}) AND (번호 = {student_num})"
+            sql = f"UPDATE test_attandance SET 퇴실시간 = {nowTime} WHERE (날짜 = {nowDate}) AND (번호 = {student_num})"
 
             # execute 메서드로 db에 sql 문장 전송
             cur_corn.execute(sql)
@@ -497,7 +556,22 @@ class Bcorn(QWidget, form_class):
             # DB 닫아주기
             src_db.close()
 
+    # 출석 상태 하단에 보여주기 메서드
+    def show_attandance(self):
+        attandance = str(self.account[-5])
+        late = str(self.account[-4])
+        earlyLeave = str(self.account[-3])
+        goingout = str(self.account[-2])
+        absent = str(self.account[-1])
+
+        self.circle_attandance.setText(attandance)
+        self.circle_late.setText(late)
+        self.circle_earlyLeave.setText(earlyLeave)
+        self.circle_goingout.setText(goingout)
+        self.circle_absent.setText(absent)
+
     # ---------------- 데이터 카운트 메서드 ----------------
+
     # 지각이면 지각 데이터 카운트 추가 메서드
     def method_lateCount(self):
         # DB 연결하기
@@ -565,37 +639,6 @@ class Bcorn(QWidget, form_class):
         src_db.commit()
         # DB 닫아주기
         src_db.close()
-
-    # 출석하면 출석 데이터 카운트 추가 메서드
-    def method_attandanceCount(self):
-        # DB 연결하기
-        src_db = pymysql.connect(host='10.10.21.102', user='local', password='0000', db='b-corn', charset='utf8')
-        # DB와 상호작용하기 위해 연결해주는 cursor 객체 만듬
-        cur_corn = src_db.cursor()
-
-        # 현재 로그인 한 사람의 출석 카운트를 추가하고 싶어
-        sql = f"UPDATE student_test SET 출석 = {self.account[-5]} + 1 WHERE 번호 = {self.account[0]}"
-
-        # execute 메서드로 db에 sql 문장 전송
-        cur_corn.execute(sql)
-        # 쿼리문 실행!
-        src_db.commit()
-        # DB 닫아주기
-        src_db.close()
-
-    # 출석 상태 하단에 보여주기 메서드
-    def show_attandance(self):
-        attandance = str(self.account[-5])
-        late = str(self.account[-4])
-        earlyLeave = str(self.account[-3])
-        goingout = str(self.account[-2])
-        absent = str(self.account[-1])
-
-        self.circle_attandance.setText(attandance)
-        self.circle_late.setText(late)
-        self.circle_earlyLeave.setText(earlyLeave)
-        self.circle_goingout.setText(goingout)
-        self.circle_absent.setText(absent)
 
     # ---------------- 로그인 메서드 ----------------
     # DB에서 ID, PW 정보 가져와서 입력한 ID, PW와 대조하기(교수)
