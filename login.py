@@ -3,7 +3,7 @@ import sys
 from PyQt5.QtWidgets import *
 from PyQt5 import uic
 from PyQt5.QtCore import QTime, QDate
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 # ui 클래스
 form_class = uic.loadUiType("ui/main.ui")[0]
@@ -39,6 +39,8 @@ class Bcorn(QWidget, form_class):
         self.btn_Logout1.clicked.connect(self.professor_logout)   # 교수 위젯 로그아웃
         self.btn_Logout2.clicked.connect(self.student_logout)   # 학생 위젯 로그아웃
         self.btn_Logout3.clicked.connect(self.student_logout)   # 일정 위젯에서 로그아웃
+        self.btn_Logout4.clicked.connect(self.student_logout)   # 메세지 보내기 위젯에서 로그아웃
+        self.btn_Logout5.clicked.connect(self.professor_logout)   # 메세지 확인하기 위젯에서 로그아웃
 
         # self.studentORprofessor_widget.
 
@@ -56,11 +58,19 @@ class Bcorn(QWidget, form_class):
         self.btn_leave1.clicked.connect(self.method_leave)
         self.btn_leave2.clicked.connect(self.method_leave)
 
+        # 메세지 보내기 버튼 누르면 위젯 이동
+        self.btn_message.clicked.connect(lambda method_moveSendMessageWidget: self.HRD_Widget.setCurrentIndex(4))
+        self.btn_messagePro.clicked.connect(self.method_moveCheckMessageWidget)
+
         # ---------------- 일정 위젯 ----------------
         # 일정 보기 버튼 누르면 일정위젯으로 이동하는 메소드 실행(람다 처음 써보는데 너무 신기함)
         self.btn_showChalendar.clicked.connect(lambda method_moveScheduleWidget: self.HRD_Widget.setCurrentIndex(3))
-        # 메인 화면 버튼 누르면 출석 위젯으로 이동하기
-        self.btn_moveAttandance.clicked.connect(lambda method_moveAttandane: self.HRD_Widget.setCurrentIndex(2))
+
+
+        # 메인 화면 버튼 누르면 교수 계정은 교수 위젯으로 학생 계정은 학생 출석 위젯으로 이동하기
+        self.btn_moveAttandance1.clicked.connect(self.method_moveMain)
+        self.btn_moveAttandance2.clicked.connect(self.method_moveMain)
+        self.btn_moveAttandance3.clicked.connect(self.method_moveMain)
 
         # 일정 추가 버튼 누르면 DB에 일정 추가해주는 메소드 실행
         self.btn_addSchedule.clicked.connect(self.method_addSchedule)
@@ -93,6 +103,71 @@ class Bcorn(QWidget, form_class):
 
         # 출결 정산 버튼 누르면 정산 메서드 실행
         self.btn_calculateAttandance.clicked.connect(self.method_calculateAttandance)
+
+        # 일정 보기 버튼 누르면 일정 위젯으로 이동
+        self.btn_showChalendarPro.clicked.connect(lambda method_moveScheduleWidget: self.HRD_Widget.setCurrentIndex(3))
+
+        # ---------------- 메세지 보내기 위젯 ----------------
+        # 메세지 보내기 버튼 누르면 메세지 보내는 메서드 실행
+        self.btn_sendMessage.clicked.connect(self.method_sendMessage)
+
+    # 교수 계정으로 메세지 확인하기 메소드
+    def method_moveCheckMessageWidget(self):
+        self.HRD_Widget.setCurrentIndex(5)
+        # 메세지 확인하는 메서드 실행
+        self.method_checkMessage()
+
+    # 메세지 보내기 메서드
+    def method_sendMessage(self):
+        if not bool(self.txe_sendMessage.toPlainText()):
+            QMessageBox.information(self, '입력 오류', '보낼 메세지를 입력해주세요')
+        else:
+            student = self.account[1]
+            message = self.txe_sendMessage.toPlainText()
+            professor = self.cbb_professor.currentText()
+            message_datetime = datetime.now()
+
+            # DB 연결하기
+            src_db = pymysql.connect(host='10.10.21.102', user='local', password='0000', db='b-corn', charset='utf8')
+            # DB와 상호작용하기 위해 연결해주는 cursor 객체 만듬
+            cur_corn = src_db.cursor()
+
+            # 입력한 메세지를 선택한 교수님께 보내고 싶어
+            sql = f"INSERT INTO message_data VALUES ('{student}', '{professor}', '{message}', '{message_datetime}')"
+
+            # execute 메서드로 db에 sql 문장 전송
+            cur_corn.execute(sql)
+            # 쿼리문 실행!
+            src_db.commit()
+
+            # DB 닫아주기
+            src_db.close()
+            QMessageBox.information(self, '전송 완료', '메세지를 보냈습니다')
+            self.txe_sendMessage.clear()
+
+    # 메세지 확인하기 메서드
+    def method_checkMessage(self):
+        # self.tb_checkMessage
+
+        # DB를 열고 로그인한 계정으로 보낸 메세지
+        src_db = pymysql.connect(host='10.10.21.102', user='local', password='0000', db='b-corn', charset='utf8')
+        # DB와 상호작용하기 위해 연결해주는 cursor 객체 만듬
+        cur_corn = src_db.cursor()
+
+        # 오늘 로그인한 사람의 출석 상황을 보고싶어
+        sql = f"SELECT * FROM message_data WHERE 받는사람 = '{self.account[0]}'"
+
+        # execute 메서드로 db에 sql 문장 전송
+        cur_corn.execute(sql)
+        message = cur_corn.fetchall()  # 오늘 로그인한 사람의 출석 상황 정보 저장(2중튜플)
+        # DB 닫아주기
+        src_db.close()
+        print(message)
+        self.tb_checkMessage.setRowCount(len(message))  # 테이블 위젯 ui의 행 길이 정해줌(가로줄)
+        for i in range(len(message)):
+            self.tb_checkMessage.setItem(i, 0, QTableWidgetItem(str(message[i][2])))
+            self.tb_checkMessage.setItem(i, 1, QTableWidgetItem(str(message[i][0])))
+            self.tb_checkMessage.setItem(i, 2, QTableWidgetItem(str(message[i][-1])))
 
     # ---------------- 관리자 메서드 ----------------
     # 선택한 날짜의 출결 상황 보여주는 메소드
@@ -391,6 +466,14 @@ class Bcorn(QWidget, form_class):
             for j in range(len(schedule_data[i])):
                 self.tw_schedule.setItem(i, j, QTableWidgetItem(schedule_data[i][j]))
 
+    # 교수 계정은 관리자 위젯으로, 학생 계정은 출석 확인 위젯으로 이동
+    def method_moveMain(self):
+        # 계정 정보 길이가 4보다 길면 학생 계정
+        if len(self.account) > 4:
+            self.HRD_Widget.setCurrentIndex(2)
+        else:
+            self.HRD_Widget.setCurrentIndex(1)
+
     # ---------------- 출석 메서드 ----------------
     # 출석 상태 확인 메서드(로그인 후 실행)
     def check_attandance(self):
@@ -634,7 +717,7 @@ class Bcorn(QWidget, form_class):
             self.reject_Login()  # 로그인 거절 함수 실행
             print('로그인 실패')
         else:
-            self.account = professor_account[0]  # 2중 튜플이 아닌 일반 1중 튜플로 학생 회원 정보 저장
+            self.account = professor_account[0]  # 2중 튜플이 아닌 일반 1중 튜플로 관리자 회원 정보 저장
             self.accept_professorLogin()  # 로그인 허용 함수(교수) 실행
 
     # 메인 화면에서 로그아웃버튼을 누르면 로그인 창으로 되돌아옴(교수)
@@ -655,6 +738,7 @@ class Bcorn(QWidget, form_class):
         self.time_goingout.clear()
         self.time_return.clear()
         self.tw_schedule.clear()
+        self.tb_selectDate.clear()
 
     # DB에서 ID, PW 정보 가져와서 입력한 ID, PW와 대조하기(학생)
     def checkStudentLogin(self):
