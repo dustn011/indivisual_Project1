@@ -130,7 +130,7 @@ class Bcorn(QWidget, form_class):
 
     # 출결 정산 메서드
     def method_calculateAttandance(self):
-        pass
+        print('출결정산버튼 누름')
 
     # ---------------- 일정 메서드 ----------------
     # 일정 수정하는 메소드
