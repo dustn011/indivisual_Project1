@@ -313,7 +313,7 @@ background-color: rgb(233, 236, 255);
     <widget class="QPushButton" name="btn_calculateAttandance">
      <property name="geometry">
       <rect>
-       <x>190</x>
+       <x>240</x>
        <y>570</y>
        <width>75</width>
        <height>23</height>
@@ -417,6 +417,19 @@ background-color: rgb(233, 236, 255);
        <string>출결</string>
       </property>
      </column>
+    </widget>
+    <widget class="QPushButton" name="btn_startAttandance">
+     <property name="geometry">
+      <rect>
+       <x>160</x>
+       <y>570</y>
+       <width>75</width>
+       <height>23</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>출석 시작</string>
+     </property>
     </widget>
    </widget>
    <widget class="QWidget" name="main_page">

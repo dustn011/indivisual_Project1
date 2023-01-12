@@ -57,9 +57,9 @@ class Bcorn(QWidget, form_class):
         self.btn_leave2.clicked.connect(self.method_leave)
 
         # ---------------- 일정 위젯 ----------------
-        # 일정 보기 버튼 누르면 일정위젯으로 이동하는 메소드 실행
+        # 일정 보기 버튼 누르면 일정위젯으로 이동하는 메소드 실행(람다 처음 써보는데 너무 신기함)
         self.btn_showChalendar.clicked.connect(lambda method_moveScheduleWidget: self.HRD_Widget.setCurrentIndex(3))
-        # 메인 화면 버튼 누르면 출석 위젯으로 이동하기(람다 처음 써보는데 너무 신기함)
+        # 메인 화면 버튼 누르면 출석 위젯으로 이동하기
         self.btn_moveAttandance.clicked.connect(lambda method_moveAttandane: self.HRD_Widget.setCurrentIndex(2))
 
         # 일정 추가 버튼 누르면 DB에 일정 추가해주는 메소드 실행
@@ -87,6 +87,9 @@ class Bcorn(QWidget, form_class):
 
         # 캘린더 선택하면 선택한 날짜의 출결 상황 보여줌
         self.cw_checkAttadance.clicked.connect(self.method_showtoProfessorAttandance)
+
+        # 출결 시작 버튼 누르면 DB에 그 날 출결 실행 가능한 출석 정보 생김
+        self.btn_startAttandance.clicked.connect(self.method_startAttandance)
 
         # 출결 정산 버튼 누르면 정산 메서드 실행
         self.btn_calculateAttandance.clicked.connect(self.method_calculateAttandance)
@@ -119,9 +122,9 @@ class Bcorn(QWidget, form_class):
         # DB 닫아주기
         src_db.close()
 
-        # sql문으로 가져온 출석 정보가 없으면 메세지 박스 출력
+        # sql문으로 가져온 출석 정보가 없으면 출석 정보 생성 가능
         if not bool(self.attandance_data):
-            QMessageBox.information(self, '일정 오류', '출석 정보가 없습니다.')
+            pass
         else:
             self.tbw_checkAttandance.setRowCount(len(self.attandance_data))  # 테이블 위젯 ui의 행 길이 정해줌(가로줄)
             # 출석 정보 테이블 위젯에 넣기
@@ -129,10 +132,45 @@ class Bcorn(QWidget, form_class):
                 for j in range(len(self.attandance_data[i])):
                     self.tbw_checkAttandance.setItem(i, j, QTableWidgetItem(str(self.attandance_data[i][j])))
 
+    # 출결 시작 메서드
+    def method_startAttandance(self):
+        # 선택한 날짜 변수에 저장하기
+        selectDay = self.cw_checkAttadance.selectedDate().toString('yyMMdd')
+        # DB 연결하기
+        src_db = pymysql.connect(host='10.10.21.102', user='local', password='0000', db='b-corn', charset='utf8')
+        # DB와 상호작용하기 위해 연결해주는 cursor 객체 만듬
+        cur_corn = src_db.cursor()
+
+        # 선택한 날짜에 데이터가 있는지 불러와줘
+        select_sql = f"SELECT * FROM test_attandance WHERE 날짜 = {selectDay}"
+        cur_corn.execute(select_sql)
+        check_data = cur_corn.fetchall()
+
+        # 데이터 없으면 출결 데이터 생성
+        if not bool(check_data):
+            QMessageBox.information(self, '출결 시작', '출석을 진행해주세요.')
+            # 학생 번호 먼저 다 넣기(insert문 너무 어려월요..)
+            insert_sql = f"INSERT INTO test_attandance (번호) select 번호 from student_test"
+            # 학생 번호를 넣은 데이터에 선택한 날짜 넣어주기
+            update_sql = f"UPDATE test_attandance SET 날짜 = {selectDay} WHERE 날짜 is null"
+            # execute 메서드로 db에 sql 문장 전송
+            cur_corn.execute(insert_sql)
+            cur_corn.execute(update_sql)
+            # 쿼리문 실행!
+            src_db.commit()
+        # 데이터 있으면 데이터 못만듬
+        else:
+            QMessageBox.information(self, '생성 오류', '이미 출결 시작한 날입니다.')
+        # DB 닫아주기
+        src_db.close()
+
+        # 다시 업데이트된 내용 테이블 위젯 보여주기
+        self.method_showtoProfessorAttandance()
+
     # 출결 정산 메서드 ※ datetime 타입은 datetime 타입끼리만 연산, 비교 가능하다
     def method_calculateAttandance(self):
-        # 출석 정보가 있을 때
-        if bool(self.attandance_data):
+        # 출석 정보가 있고 당일과 당일 이전의 출결만 정산할 수 있다.
+        if bool(self.attandance_data) and (self.cw_checkAttadance.selectedDate() <= QDate.currentDate()):
             # 정산 안되있을 때만 돌아가게 함
             if self.attandance_data[0][-1] == 'X':
                 # 선택한 날짜 변수에 저장하기
@@ -164,7 +202,7 @@ class Bcorn(QWidget, form_class):
             else:
                 QMessageBox.information(self, '정산 오류', '정산을 마치셨습니다')
         else:
-            QMessageBox.information(self, '출결 오류', '출결 정보가 없습니다.')
+            QMessageBox.information(self, '출결 오류', '정산할 수 없습니다.')
 
     # 출결 상태 DB에서 바꿔주는 메서드 근데 한 명 출결상태 바꿔줄 때마다 데이터 열고 닫고 하는게 맞을까...? 한꺼번에 할 순 없나...?
     def method_attandanceCount(self, attandance, number, selectDay):
@@ -616,6 +654,7 @@ class Bcorn(QWidget, form_class):
         self.time_leave.clear()
         self.time_goingout.clear()
         self.time_return.clear()
+        self.tw_schedule.clear()
 
     # DB에서 ID, PW 정보 가져와서 입력한 ID, PW와 대조하기(학생)
     def checkStudentLogin(self):
@@ -664,6 +703,7 @@ class Bcorn(QWidget, form_class):
         # 아이디, 비밀번호 입력한 라인에디터 박스 초기화
         self.led_studentID.clear()
         self.led_studentPW.clear()
+        self.HRDheader_trainingcourse.setText(f'{self.account[1]}님의 훈련과정')
 
         print(self.account)
 
