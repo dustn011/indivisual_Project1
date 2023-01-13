@@ -519,49 +519,53 @@ class Bcorn(QWidget, form_class):
 
     # 입실 버튼 누르면 실행되는 메서드(지각인지 아닌지 확인하기)
     def method_present(self):
-        # 입실 체크 메세지 출력 Yes 누르면 입실됨
-        check = QMessageBox.question(self, '입실', '입실 하겠습니까?', QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-        if check == QMessageBox.Yes:
-            # 현재 시간 QTime.current로 가져와서 time 변수에 넣어주기
-            time = QTime.currentTime()
-            # 현재 날짜 QDate.current로 가져와서 date 변수에 넣어주기
-            date = QDate.currentDate()
-            # 입실 완료 메세지
-            QMessageBox.information(self, '입실 완료', '입실 하셨습니다')
+        # 비콘 9시부터 찍으세요^^
+        if QTime.currentTime() < QTime(9):
+            QMessageBox.information(self, '입실 오류', '9시부터 비콘을 찍을 수 있습니다.')
+        else:
+            # 입실 체크 메세지 출력 Yes 누르면 입실됨
+            check = QMessageBox.question(self, '입실', '입실 하겠습니까?', QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+            if check == QMessageBox.Yes:
 
-            # 외출, 퇴실 버튼 있는 위젯으로 이동
-            self.schedule_btnWidget.setCurrentIndex(1)
+                # 현재 날짜 QDate.current로 가져와서 date 변수에 넣어주기
+                date = QDate.currentDate()
+                # 입실 완료 메세지
+                QMessageBox.information(self, '입실 완료', '입실 하셨습니다')
+                # 현재 시간 QTime.current로 가져와서 time 변수에 넣어주기
+                time = QTime.currentTime()
+                # 외출, 퇴실 버튼 있는 위젯으로 이동
+                self.schedule_btnWidget.setCurrentIndex(1)
 
-            # 입실 | **:** 형태로 입실 시간 time_present 텍스트 브라우저에 넣어주기
-            self.time_present.setText(time.toString('입실 | hh:mm:ss'))
+                # 입실 | **:** 형태로 입실 시간 time_present 텍스트 브라우저에 넣어주기
+                self.time_present.setText(time.toString('입실 | hh:mm:ss'))
 
-            # 쿼리문으로 전달할 날짜 데이터 문자열로 저장
-            nowDate = date.toString('yyMMdd')
-            # 쿼리문으로 전달할 학생 번호 저장
-            student_num = str(self.account[0])
-            # 쿼리문으로 전달할 입실 시간 데이터 문자열로 저장
-            nowTime = time.toString('hhmmss')
+                # 쿼리문으로 전달할 날짜 데이터 문자열로 저장
+                nowDate = date.toString('yyMMdd')
+                # 쿼리문으로 전달할 학생 번호 저장
+                student_num = str(self.account[0])
+                # 쿼리문으로 전달할 입실 시간 데이터 문자열로 저장
+                nowTime = time.toString('hhmmss')
 
-            # 지금 로그인 한 사람의 정보 가져오기
-            # print(self.account)
-            # print(type(student_name), nowTime, nowDate)
+                # 지금 로그인 한 사람의 정보 가져오기
+                # print(self.account)
+                # print(type(student_name), nowTime, nowDate)
 
-            # DB 연결하기
-            src_db = pymysql.connect(host='10.10.21.102', user='local', password='0000', db='b-corn', charset='utf8')
-            # DB와 상호작용하기 위해 연결해주는 cursor 객체 만듬
-            cur_corn = src_db.cursor()
+                # DB 연결하기
+                src_db = pymysql.connect(host='10.10.21.102', user='local', password='0000', db='b-corn', charset='utf8')
+                # DB와 상호작용하기 위해 연결해주는 cursor 객체 만듬
+                cur_corn = src_db.cursor()
 
-            # 오늘 날짜와 로그인한 사람의 학생번호, 입실시간을 DB에 넣고싶어
-            sql = f"""UPDATE test_attandance
-                      SET 입실시간 = {nowTime}
-                      WHERE 날짜 = {nowDate} and 번호 = {student_num}"""
+                # 오늘 날짜와 로그인한 사람의 학생번호, 입실시간을 DB에 넣고싶어
+                sql = f"""UPDATE test_attandance
+                          SET 입실시간 = {nowTime}
+                          WHERE 날짜 = {nowDate} and 번호 = {student_num}"""
 
-            # execute 메서드로 db에 sql 문장 전송
-            cur_corn.execute(sql)
-            # 쿼리문 실행!
-            src_db.commit()
-            # DB 닫아주기
-            src_db.close()
+                # execute 메서드로 db에 sql 문장 전송
+                cur_corn.execute(sql)
+                # 쿼리문 실행!
+                src_db.commit()
+                # DB 닫아주기
+                src_db.close()
 
     # 외출 버튼 누르면 실행되는 메서드
     def method_goingout(self):
