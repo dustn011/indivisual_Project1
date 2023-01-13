@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>593</width>
-    <height>757</height>
+    <width>462</width>
+    <height>653</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,8 +16,8 @@
   <widget class="QStackedWidget" name="HRD_Widget">
    <property name="geometry">
     <rect>
-     <x>50</x>
-     <y>10</y>
+     <x>0</x>
+     <y>0</y>
      <width>451</width>
      <height>641</height>
     </rect>
@@ -482,7 +482,7 @@ background-color: rgb(233, 236, 255);
       </rect>
      </property>
      <property name="text">
-      <string>시간표등록</string>
+      <string>공지등록</string>
      </property>
     </widget>
    </widget>
@@ -1207,7 +1207,7 @@ p, li { white-space: pre-wrap; }
       <string>메세지</string>
      </property>
     </widget>
-    <widget class="QTextBrowser" name="tb_announcement">
+    <widget class="QTextBrowser" name="tb_todayclasslist">
      <property name="geometry">
       <rect>
        <x>30</x>
@@ -1215,6 +1215,11 @@ p, li { white-space: pre-wrap; }
        <width>381</width>
        <height>31</height>
       </rect>
+     </property>
+     <property name="font">
+      <font>
+       <family>맑은 고딕</family>
+      </font>
      </property>
     </widget>
     <widget class="QPushButton" name="btn_showChalendar">
@@ -1251,7 +1256,7 @@ p, li { white-space: pre-wrap; }
       </font>
      </property>
      <property name="text">
-      <string>교수님 공지</string>
+      <string>오늘 공지</string>
      </property>
      <property name="alignment">
       <set>Qt::AlignCenter</set>
@@ -1281,7 +1286,7 @@ p, li { white-space: pre-wrap; }
     <zorder>time_leave</zorder>
     <zorder>time_present</zorder>
     <zorder>btn_message</zorder>
-    <zorder>tb_announcement</zorder>
+    <zorder>tb_todayclasslist</zorder>
     <zorder>btn_showChalendar</zorder>
     <zorder>label_3</zorder>
    </widget>
@@ -1562,7 +1567,7 @@ background-color: rgb(233, 236, 255);
      <property name="geometry">
       <rect>
        <x>330</x>
-       <y>510</y>
+       <y>480</y>
        <width>101</width>
        <height>31</height>
       </rect>

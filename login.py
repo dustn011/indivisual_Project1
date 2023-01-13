@@ -107,14 +107,14 @@ class Bcorn(QWidget, form_class):
         # 일정 보기 버튼 누르면 일정 위젯으로 이동
         self.btn_showChalendarPro.clicked.connect(lambda method_moveScheduleWidget: self.HRD_Widget.setCurrentIndex(3))
 
-        # 시간표 등록 버튼 누르면 라인에디트에 적혀있는 글씨 db에 저장. 이미 시간표 등록되있으면 수정하시겠습니까? 질문하기
+        # 공지 등록 버튼 누르면 라인에디트에 적혀있는 글씨 db에 저장. 이미 공지 등록되있으면 수정하시겠습니까? 질문하기
         self.btn_addClassList.clicked.connect(self.method_addClassList)
 
         # ---------------- 메세지 보내기 위젯 ----------------
         # 메세지 보내기 버튼 누르면 메세지 보내는 메서드 실행
         self.btn_sendMessage.clicked.connect(self.method_sendMessage)
 
-    # 시간표 등록 버튼 누르면 라인에디트에 적혀있는 글씨 db에 저장. 이미 시간표 등록되있으면 수정하시겠습니까? 질문하기
+    # 공지 등록 버튼 누르면 라인에디트에 적혀있는 글씨 db에 저장. 이미 공지 등록되있으면 수정하시겠습니까? 질문하기
     def method_addClassList(self):
         # 선택한 날짜 학습 일정이 등록돼 있으면 보여주기
         # self.setPlaceholderText.
@@ -846,6 +846,26 @@ class Bcorn(QWidget, form_class):
         self.led_studentID.clear()
         self.led_studentPW.clear()
         self.HRDheader_trainingcourse.setText(f'{self.account[1]}님의 훈련과정')
+
+        # DB 연결하기
+        src_db = pymysql.connect(host='10.10.21.102', user='local', password='0000', db='b-corn', charset='utf8')
+        # DB와 상호작용하기 위해 연결해주는 cursor 객체 만듬
+        cur_corn = src_db.cursor()
+
+        # 오늘 공지를 가져오고 싶어
+        sql = f"SELECT 학습일정 FROM schedule_monthly WHERE 날짜 = {QDate.currentDate().toString('yyMMdd')}"
+        # execute 메서드로 db에 student_sql 문장 전송
+        cur_corn.execute(sql)
+
+        # 전체 나열 함수, 레코드를 배열(튜플) 형식으로 저장해준다(fetch : 나열하다 정렬하다)
+        announcement = cur_corn.fetchall()  # 오늘 공지 가져옴
+
+        # DB 닫아주기
+        src_db.close()
+        if bool(announcement):
+            self.tb_todayclasslist.setText(announcement[0][0])
+        else:
+            self.tb_todayclasslist.clear()
 
         print(self.account)
 
