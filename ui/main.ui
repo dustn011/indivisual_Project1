@@ -26,7 +26,7 @@
     <string notr="true"/>
    </property>
    <property name="currentIndex">
-    <number>1</number>
+    <number>2</number>
    </property>
    <widget class="QWidget" name="login_page">
     <widget class="QLabel" name="HRDheader_login">
@@ -680,6 +680,9 @@ color: rgb(76, 76, 76);</string>
        <height>21</height>
       </rect>
      </property>
+     <property name="maximum">
+      <number>140</number>
+     </property>
      <property name="value">
       <number>24</number>
      </property>
@@ -960,6 +963,9 @@ border-radius: 20px;</string>
        <width>381</width>
        <height>21</height>
       </rect>
+     </property>
+     <property name="maximum">
+      <number>140</number>
      </property>
      <property name="value">
       <number>24</number>
@@ -1262,6 +1268,69 @@ p, li { white-space: pre-wrap; }
       <set>Qt::AlignCenter</set>
      </property>
     </widget>
+    <widget class="QLabel" name="lbl_myattandance">
+     <property name="geometry">
+      <rect>
+       <x>130</x>
+       <y>340</y>
+       <width>101</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <family>맑은 고딕</family>
+      </font>
+     </property>
+     <property name="text">
+      <string>출석일(140일)</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+    <widget class="QLabel" name="lbl_course">
+     <property name="geometry">
+      <rect>
+       <x>130</x>
+       <y>400</y>
+       <width>101</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <family>맑은 고딕</family>
+      </font>
+     </property>
+     <property name="text">
+      <string>출석일(140일)</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+    <widget class="QLabel" name="lbl_absentDay">
+     <property name="geometry">
+      <rect>
+       <x>130</x>
+       <y>460</y>
+       <width>51</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <family>맑은 고딕</family>
+      </font>
+     </property>
+     <property name="text">
+      <string>0일</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
     <zorder>attandance_background_box</zorder>
     <zorder>HRDheader_trainingcourse</zorder>
     <zorder>label_15</zorder>
@@ -1289,6 +1358,9 @@ p, li { white-space: pre-wrap; }
     <zorder>tb_todayclasslist</zorder>
     <zorder>btn_showChalendar</zorder>
     <zorder>label_3</zorder>
+    <zorder>lbl_myattandance</zorder>
+    <zorder>lbl_course</zorder>
+    <zorder>lbl_absentDay</zorder>
    </widget>
    <widget class="QWidget" name="schedule_page">
     <widget class="QLabel" name="HRDheader_schedule">

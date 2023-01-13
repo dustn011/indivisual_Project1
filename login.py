@@ -4,6 +4,8 @@ from PyQt5.QtWidgets import *
 from PyQt5 import uic
 from PyQt5.QtCore import QTime, QDate
 from datetime import timedelta, datetime
+import threading
+
 
 # ui 클래스
 form_class = uic.loadUiType("ui/main.ui")[0]
@@ -873,6 +875,8 @@ class Bcorn(QWidget, form_class):
         self.check_attandance()
         # 하단 출석상태 출력 실험 실행
         self.show_attandance()
+        # 출석률 progress바에 출력
+        self.calculateAttendance()
 
     # 로그인 실패 시 실행하는 함수(학생)
     def reject_Login(self):
@@ -883,6 +887,16 @@ class Bcorn(QWidget, form_class):
         self.led_studentPW.clear()
         self.led_professorID.clear()
         self.led_professorPW.clear()
+
+    # 출석률 계산 함수(학생)
+    def calculateAttendance(self):
+        self.myattandance_progress.setValue(self.account[-5])
+        self.course_progress.setValue(self.account[-5])
+        self.lbl_myattandance.setText(f'({self.account[-5]}/140일)')
+        self.lbl_course.setText(f'({self.account[-5]}/140일)')
+
+        # 결석했으면 결석 횟수 적어줌
+        self.lbl_absentDay.setText(f'{self.account[-1]}일')
 
 
 if __name__ == "__main__":
