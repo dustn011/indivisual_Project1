@@ -19,14 +19,14 @@
      <x>50</x>
      <y>10</y>
      <width>451</width>
-     <height>621</height>
+     <height>641</height>
     </rect>
    </property>
    <property name="styleSheet">
     <string notr="true"/>
    </property>
    <property name="currentIndex">
-    <number>5</number>
+    <number>1</number>
    </property>
    <widget class="QWidget" name="login_page">
     <widget class="QLabel" name="HRDheader_login">
@@ -313,8 +313,8 @@ background-color: rgb(233, 236, 255);
     <widget class="QPushButton" name="btn_calculateAttandance">
      <property name="geometry">
       <rect>
-       <x>240</x>
-       <y>570</y>
+       <x>100</x>
+       <y>590</y>
        <width>75</width>
        <height>23</height>
       </rect>
@@ -354,9 +354,9 @@ background-color: rgb(233, 236, 255);
      <property name="geometry">
       <rect>
        <x>20</x>
-       <y>340</y>
+       <y>380</y>
        <width>421</width>
-       <height>221</height>
+       <height>201</height>
       </rect>
      </property>
      <property name="alternatingRowColors">
@@ -421,8 +421,8 @@ background-color: rgb(233, 236, 255);
     <widget class="QPushButton" name="btn_startAttandance">
      <property name="geometry">
       <rect>
-       <x>160</x>
-       <y>570</y>
+       <x>20</x>
+       <y>590</y>
        <width>75</width>
        <height>23</height>
       </rect>
@@ -460,6 +460,29 @@ background-color: rgb(233, 236, 255);
      </property>
      <property name="text">
       <string>메세지</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="led_classlist">
+     <property name="geometry">
+      <rect>
+       <x>30</x>
+       <y>340</y>
+       <width>321</width>
+       <height>31</height>
+      </rect>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="btn_addClassList">
+     <property name="geometry">
+      <rect>
+       <x>360</x>
+       <y>340</y>
+       <width>71</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>시간표등록</string>
      </property>
     </widget>
    </widget>
@@ -1188,9 +1211,9 @@ p, li { white-space: pre-wrap; }
      <property name="geometry">
       <rect>
        <x>30</x>
-       <y>490</y>
+       <y>520</y>
        <width>381</width>
-       <height>71</height>
+       <height>31</height>
       </rect>
      </property>
     </widget>
@@ -1210,6 +1233,28 @@ p, li { white-space: pre-wrap; }
      </property>
      <property name="text">
       <string>일정보기</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_3">
+     <property name="geometry">
+      <rect>
+       <x>190</x>
+       <y>491</y>
+       <width>81</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <family>맑은 고딕</family>
+       <pointsize>12</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>교수님 공지</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
      </property>
     </widget>
     <zorder>attandance_background_box</zorder>
@@ -1238,6 +1283,7 @@ p, li { white-space: pre-wrap; }
     <zorder>btn_message</zorder>
     <zorder>tb_announcement</zorder>
     <zorder>btn_showChalendar</zorder>
+    <zorder>label_3</zorder>
    </widget>
    <widget class="QWidget" name="schedule_page">
     <widget class="QLabel" name="HRDheader_schedule">
@@ -1261,7 +1307,7 @@ background-color: rgb(233, 236, 255);
 }</string>
      </property>
      <property name="text">
-      <string>일정</string>
+      <string>학생 일정</string>
      </property>
      <property name="alignment">
       <set>Qt::AlignCenter</set>
@@ -1376,7 +1422,7 @@ background-color: rgb(233, 236, 255);
      <property name="geometry">
       <rect>
        <x>30</x>
-       <y>340</y>
+       <y>350</y>
        <width>91</width>
        <height>21</height>
       </rect>
@@ -1442,6 +1488,19 @@ background-color: rgb(233, 236, 255);
       </property>
      </column>
     </widget>
+    <widget class="QTextBrowser" name="tb_classlist">
+     <property name="geometry">
+      <rect>
+       <x>120</x>
+       <y>350</y>
+       <width>311</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="verticalScrollBarPolicy">
+      <enum>Qt::ScrollBarAlwaysOff</enum>
+     </property>
+    </widget>
    </widget>
    <widget class="QWidget" name="sendMessage_page">
     <widget class="QLabel" name="HRDheader_message">
@@ -1475,7 +1534,7 @@ background-color: rgb(233, 236, 255);
      <property name="geometry">
       <rect>
        <x>20</x>
-       <y>80</y>
+       <y>140</y>
        <width>61</width>
        <height>22</height>
       </rect>
@@ -1502,8 +1561,8 @@ background-color: rgb(233, 236, 255);
     <widget class="QPushButton" name="btn_sendMessage">
      <property name="geometry">
       <rect>
-       <x>334</x>
-       <y>390</y>
+       <x>330</x>
+       <y>510</y>
        <width>101</width>
        <height>31</height>
       </rect>
@@ -1547,15 +1606,15 @@ background-color: rgb(233, 236, 255);
      <property name="geometry">
       <rect>
        <x>20</x>
-       <y>110</y>
+       <y>170</y>
        <width>411</width>
-       <height>271</height>
+       <height>301</height>
       </rect>
      </property>
     </widget>
    </widget>
    <widget class="QWidget" name="page">
-    <widget class="QLabel" name="HRDheader_message_2">
+    <widget class="QLabel" name="HRDheader_checkMessage">
      <property name="geometry">
       <rect>
        <x>10</x>
@@ -1617,9 +1676,9 @@ background-color: rgb(233, 236, 255);
      <property name="geometry">
       <rect>
        <x>20</x>
-       <y>90</y>
+       <y>80</y>
        <width>421</width>
-       <height>181</height>
+       <height>261</height>
       </rect>
      </property>
      <column>
