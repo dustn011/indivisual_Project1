@@ -4,6 +4,8 @@ from PyQt5.QtWidgets import *
 from PyQt5 import uic
 from PyQt5.QtCore import QTime, QDate
 from datetime import timedelta, datetime
+import threading
+
 
 # ui 클래스
 form_class = uic.loadUiType("ui/main.ui")[0]
@@ -107,9 +109,54 @@ class Bcorn(QWidget, form_class):
         # 일정 보기 버튼 누르면 일정 위젯으로 이동
         self.btn_showChalendarPro.clicked.connect(lambda method_moveScheduleWidget: self.HRD_Widget.setCurrentIndex(3))
 
+        # 공지 등록 버튼 누르면 라인에디트에 적혀있는 글씨 db에 저장. 이미 공지 등록되있으면 수정하시겠습니까? 질문하기
+        self.btn_addClassList.clicked.connect(self.method_addClassList)
+
         # ---------------- 메세지 보내기 위젯 ----------------
         # 메세지 보내기 버튼 누르면 메세지 보내는 메서드 실행
         self.btn_sendMessage.clicked.connect(self.method_sendMessage)
+
+    # 공지 등록 버튼 누르면 라인에디트에 적혀있는 글씨 db에 저장. 이미 공지 등록되있으면 수정하시겠습니까? 질문하기
+    def method_addClassList(self):
+        # 선택한 날짜 학습 일정이 등록돼 있으면 보여주기
+        # self.setPlaceholderText.
+
+        # 선택한 날짜 변수에 문자열로 저장
+        selectDay = self.cw_checkAttadance.selectedDate().toString('yyMMdd')
+        addClass = self.led_classlist.text()
+
+        # DB 열기
+        src_db = pymysql.connect(host='10.10.21.102', user='local', password='0000', db='b-corn', charset='utf8')
+        # DB와 상호작용하기 위해 연결해주는 cursor 객체 만듬
+        cur_corn = src_db.cursor()
+
+        # 선택한 날짜의 학습일정을 보고싶어
+        sql = f"SELECT 학습일정 FROM schedule_monthly WHERE 날짜 = '{selectDay}'"
+
+        # execute 메서드로 db에 sql 문장 전송
+        cur_corn.execute(sql)
+        classList = cur_corn.fetchall()  # 오늘 로그인한 사람의 출석 상황 정보 저장(2중튜플)
+        # DB 닫아주기
+
+        if bool(classList):
+            print('일정있음')
+            check = QMessageBox.question(self, '일정 존재', '시간표를 이미 입력했습니다\n입력하신 내용으로 수정 하시겠습니까?', QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+            if check == QMessageBox.Yes:
+                sql = f"UPDATE schedule_monthly SET 학습일정 = '{addClass}' WHERE 날짜 = '{selectDay}'"
+                # 입력완료
+                QMessageBox.information(self, '수정 완료', '시간표를 수정하셨습니다.')
+        else:
+            print('일정없음')
+            # 선택한 날짜에 학습일정을 넣고싶어
+            sql = f"INSERT INTO schedule_monthly VALUES ('{selectDay}', '{addClass}')"
+            # 입력완료
+            QMessageBox.information(self, '입력 완료', '시간표를 등록하셨습니다.')
+        # execute 메서드로 db에 sql 문장 전송
+        cur_corn.execute(sql)
+        # 쿼리문 실행!
+        src_db.commit()
+
+        src_db.close()
 
     # 교수 계정으로 메세지 확인하기 메소드
     def method_moveCheckMessageWidget(self):
@@ -359,10 +406,8 @@ class Bcorn(QWidget, form_class):
             # 선택한 일정 정보 변수에 저장하기
             select_name = self.tw_schedule.selectedItems()[0].text()        # 이름 정보 저장
 
-            # 본인이 작성한게 아니면 삭제 불가
-            if select_name != self.account[1]:
-                QMessageBox.information(self, '삭제 불가', '본인이 작성한 일정만 삭제할 수 있습니다')
-            else:
+            # 본인이 작성한 거거나 관리자 계정으로 들어왔을 경우 삭제 가능
+            if (select_name == self.account[1]) or (len(self.account) < 5):
                 select_schedule = self.tw_schedule.selectedItems()[1].text()    # 일정 정보 저장
 
                 # 캘린더에서 선택한 날짜 가져와서 date 변수에 넣어주기
@@ -373,16 +418,13 @@ class Bcorn(QWidget, form_class):
                 # DB와 상호작용하기 위해 연결해주는 cursor 객체 만듬
                 cur_corn = src_db.cursor()
 
-                # 선택한 날짜의 내가 작성한 내용을 삭제하고 싶어(update로 일정 null로 바꿔주기, 왜이렇게 햇냐면 delete 안쓰고 싶어서)
                 sql = f"""UPDATE schedule_test SET 일정 = null
-                          WHERE (날짜 = '{selectDay}') AND (작성자 = '{self.account[1]}') AND (일정 = '{select_schedule}')"""
+                          WHERE (날짜 = '{selectDay}') AND (작성자 = '{select_name}') AND (일정 = '{select_schedule}')"""
 
                 # execute 메서드로 db에 sql 문장 전송
                 cur_corn.execute(sql)
-
                 # 쿼리문 실행!
                 src_db.commit()
-
                 # DB 닫아주기
                 src_db.close()
 
@@ -392,6 +434,9 @@ class Bcorn(QWidget, form_class):
 
                 # 일정 다시 보여주기
                 self.method_showSchedule()
+            # 본인이 작성한게 아니면 삭제 불가
+            else:
+                QMessageBox.information(self, '삭제 불가', '본인이 작성한 일정만 삭제할 수 있습니다')
 
     # 일정 추가하는 메소드
     def method_addSchedule(self):
@@ -453,9 +498,19 @@ class Bcorn(QWidget, form_class):
 
         # execute 메서드로 db에 sql 문장 전송
         cur_corn.execute(sql)
-        schedule_data = cur_corn.fetchall()  # 오늘 로그인한 사람의 출석 상황 정보 저장(2중튜플)
+        schedule_data = cur_corn.fetchall()
+
+        # 선택한 날짜의 학습일정을 가져오고 싶어
+        sql = f'SELECT 학습일정 FROM schedule_monthly WHERE 날짜 = {selectDay}'
+        cur_corn.execute(sql)
+        schedule_monthly = cur_corn.fetchall()  # 선택한 날짜의 학습일정을 가져오고 싶어
         # DB 닫아주기
         src_db.close()
+
+        if bool(schedule_monthly):
+            self.tb_classlist.setText(schedule_monthly[0][0])
+        else:
+            self.tb_classlist.clear()
 
         self.tb_selectDate.setText(self.cw_schedule.selectedDate().toString('yy년MM월dd일'))
 
@@ -519,49 +574,53 @@ class Bcorn(QWidget, form_class):
 
     # 입실 버튼 누르면 실행되는 메서드(지각인지 아닌지 확인하기)
     def method_present(self):
-        # 입실 체크 메세지 출력 Yes 누르면 입실됨
-        check = QMessageBox.question(self, '입실', '입실 하겠습니까?', QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-        if check == QMessageBox.Yes:
-            # 현재 시간 QTime.current로 가져와서 time 변수에 넣어주기
-            time = QTime.currentTime()
-            # 현재 날짜 QDate.current로 가져와서 date 변수에 넣어주기
-            date = QDate.currentDate()
-            # 입실 완료 메세지
-            QMessageBox.information(self, '입실 완료', '입실 하셨습니다')
+        # 비콘 9시부터 찍으세요^^
+        if QTime.currentTime() < QTime(9, 0, 0):
+            QMessageBox.information(self, '입실 오류', '9시부터 비콘을 찍을 수 있습니다.')
+        else:
+            # 입실 체크 메세지 출력 Yes 누르면 입실됨
+            check = QMessageBox.question(self, '입실', '입실 하겠습니까?', QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+            if check == QMessageBox.Yes:
 
-            # 외출, 퇴실 버튼 있는 위젯으로 이동
-            self.schedule_btnWidget.setCurrentIndex(1)
+                # 현재 날짜 QDate.current로 가져와서 date 변수에 넣어주기
+                date = QDate.currentDate()
+                # 입실 완료 메세지
+                QMessageBox.information(self, '입실 완료', '입실 하셨습니다')
+                # 현재 시간 QTime.current로 가져와서 time 변수에 넣어주기
+                time = QTime.currentTime()
+                # 외출, 퇴실 버튼 있는 위젯으로 이동
+                self.schedule_btnWidget.setCurrentIndex(1)
 
-            # 입실 | **:** 형태로 입실 시간 time_present 텍스트 브라우저에 넣어주기
-            self.time_present.setText(time.toString('입실 | hh:mm:ss'))
+                # 입실 | **:** 형태로 입실 시간 time_present 텍스트 브라우저에 넣어주기
+                self.time_present.setText(time.toString('입실 | hh:mm:ss'))
 
-            # 쿼리문으로 전달할 날짜 데이터 문자열로 저장
-            nowDate = date.toString('yyMMdd')
-            # 쿼리문으로 전달할 학생 번호 저장
-            student_num = str(self.account[0])
-            # 쿼리문으로 전달할 입실 시간 데이터 문자열로 저장
-            nowTime = time.toString('hhmmss')
+                # 쿼리문으로 전달할 날짜 데이터 문자열로 저장
+                nowDate = date.toString('yyMMdd')
+                # 쿼리문으로 전달할 학생 번호 저장
+                student_num = str(self.account[0])
+                # 쿼리문으로 전달할 입실 시간 데이터 문자열로 저장
+                nowTime = time.toString('hhmmss')
 
-            # 지금 로그인 한 사람의 정보 가져오기
-            # print(self.account)
-            # print(type(student_name), nowTime, nowDate)
+                # 지금 로그인 한 사람의 정보 가져오기
+                # print(self.account)
+                # print(type(student_name), nowTime, nowDate)
 
-            # DB 연결하기
-            src_db = pymysql.connect(host='10.10.21.102', user='local', password='0000', db='b-corn', charset='utf8')
-            # DB와 상호작용하기 위해 연결해주는 cursor 객체 만듬
-            cur_corn = src_db.cursor()
+                # DB 연결하기
+                src_db = pymysql.connect(host='10.10.21.102', user='local', password='0000', db='b-corn', charset='utf8')
+                # DB와 상호작용하기 위해 연결해주는 cursor 객체 만듬
+                cur_corn = src_db.cursor()
 
-            # 오늘 날짜와 로그인한 사람의 학생번호, 입실시간을 DB에 넣고싶어
-            sql = f"""UPDATE test_attandance
-                      SET 입실시간 = {nowTime}
-                      WHERE 날짜 = {nowDate} and 번호 = {student_num}"""
+                # 오늘 날짜와 로그인한 사람의 학생번호, 입실시간을 DB에 넣고싶어
+                sql = f"""UPDATE test_attandance
+                          SET 입실시간 = {nowTime}
+                          WHERE 날짜 = {nowDate} and 번호 = {student_num}"""
 
-            # execute 메서드로 db에 sql 문장 전송
-            cur_corn.execute(sql)
-            # 쿼리문 실행!
-            src_db.commit()
-            # DB 닫아주기
-            src_db.close()
+                # execute 메서드로 db에 sql 문장 전송
+                cur_corn.execute(sql)
+                # 쿼리문 실행!
+                src_db.commit()
+                # DB 닫아주기
+                src_db.close()
 
     # 외출 버튼 누르면 실행되는 메서드
     def method_goingout(self):
@@ -727,6 +786,7 @@ class Bcorn(QWidget, form_class):
         self.tbw_checkAttandance.clear()
         # 테이블 위젯의 헤더 이름 정해주기 (초기화하니까 헤더이름까지 초기화가 되어버림;;)
         self.tbw_checkAttandance.setHorizontalHeaderLabels(['이름', '입실', '외출', '복귀', '퇴실', '출결'])
+        self.led_classlist.clear()
 
     # 메인 화면에서 로그아웃버튼을 누르면 로그인 창으로 되돌아옴(학생)
     def student_logout(self):
@@ -789,12 +849,34 @@ class Bcorn(QWidget, form_class):
         self.led_studentPW.clear()
         self.HRDheader_trainingcourse.setText(f'{self.account[1]}님의 훈련과정')
 
+        # DB 연결하기
+        src_db = pymysql.connect(host='10.10.21.102', user='local', password='0000', db='b-corn', charset='utf8')
+        # DB와 상호작용하기 위해 연결해주는 cursor 객체 만듬
+        cur_corn = src_db.cursor()
+
+        # 오늘 공지를 가져오고 싶어
+        sql = f"SELECT 학습일정 FROM schedule_monthly WHERE 날짜 = {QDate.currentDate().toString('yyMMdd')}"
+        # execute 메서드로 db에 student_sql 문장 전송
+        cur_corn.execute(sql)
+
+        # 전체 나열 함수, 레코드를 배열(튜플) 형식으로 저장해준다(fetch : 나열하다 정렬하다)
+        announcement = cur_corn.fetchall()  # 오늘 공지 가져옴
+
+        # DB 닫아주기
+        src_db.close()
+        if bool(announcement):
+            self.tb_todayclasslist.setText(announcement[0][0])
+        else:
+            self.tb_todayclasslist.clear()
+
         print(self.account)
 
         # 출석 상태에 따라서 어떤 출색 위젯을 먼저 보이게 할 지 설정
         self.check_attandance()
         # 하단 출석상태 출력 실험 실행
         self.show_attandance()
+        # 출석률 progress바에 출력
+        self.calculateAttendance()
 
     # 로그인 실패 시 실행하는 함수(학생)
     def reject_Login(self):
@@ -805,6 +887,16 @@ class Bcorn(QWidget, form_class):
         self.led_studentPW.clear()
         self.led_professorID.clear()
         self.led_professorPW.clear()
+
+    # 출석률 계산 함수(학생)
+    def calculateAttendance(self):
+        self.myattandance_progress.setValue(self.account[-5])
+        self.course_progress.setValue(self.account[-5])
+        self.lbl_myattandance.setText(f'({self.account[-5]}/140일)')
+        self.lbl_course.setText(f'({self.account[-5]}/140일)')
+
+        # 결석했으면 결석 횟수 적어줌
+        self.lbl_absentDay.setText(f'{self.account[-1]}일')
 
 
 if __name__ == "__main__":
