@@ -1,11 +1,10 @@
 import pymysql
 import sys
-import threading
 import time
 
 from PyQt5.QtWidgets import *
 from PyQt5 import uic
-from PyQt5.QtCore import QTime, QDate
+from PyQt5.QtCore import *
 from datetime import timedelta, datetime
 
 
@@ -13,12 +12,54 @@ from datetime import timedelta, datetime
 form_class = uic.loadUiType("ui/main.ui")[0]
 
 
+#쓰레드 선언
+class Thread1(QThread):
+    #parent = Bcorn을 상속 받음.
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.parent = parent
+
+    # 주로 작성시킬 코드 run 함수에 작성하기
+    def run(self):
+        while True:
+            # DB 연결하기
+            src_db = pymysql.connect(host='10.10.21.102', user='local', password='0000', db='b-corn', charset='utf8')
+            # DB와 상호작용하기 위해 연결해주는 cursor 객체 만듬
+            cur_corn = src_db.cursor()
+
+            # 오늘 공지를 가져오고 싶어
+            sql = f"SELECT 학습일정 FROM schedule_monthly WHERE 날짜 = {QDate.currentDate().toString('yyMMdd')}"
+            # execute 메서드로 db에 student_sql 문장 전송
+            cur_corn.execute(sql)
+
+            # 전체 나열 함수, 레코드를 배열(튜플) 형식으로 저장해준다(fetch : 나열하다 정렬하다)
+            announcement = cur_corn.fetchall()  # 오늘 공지 가져옴
+
+            # DB 닫아주기
+            src_db.close()
+
+            # 공지사항 출력
+            if bool(announcement):
+                self.parent.tb_todayclasslist.addItem(announcement[0][0])
+            else:
+                self.parent.tb_todayclasslist.clear()
+
+            time.sleep(1)
+            self.parent.tb_todayclasslist.clear()
+
+    def stop(self):
+        self.quit()
+        self.wait(100)
+        # for i in range(3):
+        #     print("Thread :",i)
+        #     time.sleep(1)
+
 # 클래스 선언
 class Bcorn(QWidget, form_class):
     def __init__(self):
         super().__init__()
         self.setupUi(self)
-
+        self.thr1 = Thread1(self)
         # ---------------- 로그인 위젯 ----------------
         # 처음 보이는 페이지는 로그인 페이지로 설정
         self.HRD_Widget.setCurrentIndex(0)
@@ -118,9 +159,6 @@ class Bcorn(QWidget, form_class):
         # 메세지 보내기 버튼 누르면 메세지 보내는 메서드 실행
         self.btn_sendMessage.clicked.connect(self.method_sendMessage)
 
-        # ---------------- 쓰레드 ----------------
-        thread1 = threading.Thread(target = self.show_announcement, daemon=True)
-        thread1.start()
 
     # 공지 등록 버튼 누르면 라인에디트에 적혀있는 글씨 db에 저장. 이미 공지 등록되있으면 수정하시겠습니까? 질문하기
     def method_addClassList(self):
@@ -806,6 +844,9 @@ class Bcorn(QWidget, form_class):
         self.tw_schedule.clear()
         self.tb_selectDate.clear()
 
+        # thr1 = Thread1(self)
+        # thr1.stop()
+
     # DB에서 ID, PW 정보 가져와서 입력한 ID, PW와 대조하기(학생)
     def checkStudentLogin(self):
         checking_id = self.led_studentID.text()
@@ -857,7 +898,9 @@ class Bcorn(QWidget, form_class):
         print(self.account)
 
         # 공지사항 출력(쓰레드로 계속 업데이트 해주고 싶음)
-        self.method_announcement()
+        self.show_announcement()
+        # self.method_announcement()
+
         # 출석 상태에 따라서 어떤 출색 위젯을 먼저 보이게 할 지 설정
         self.check_attandance()
         # 하단 출석상태 출력 실험 실행
@@ -865,10 +908,9 @@ class Bcorn(QWidget, form_class):
         # 출석률 progress바에 출력
         self.calculateAttendance()
 
+    # 스레드 실행시키는 함수 (공지사항 업데이트 하기)
     def show_announcement(self):
-        while 1:
-            self.method_announcement()
-            time.sleep(1)
+        self.thr1.start()
 
     # 공지사항 가져오는 함수(학생)
     def method_announcement(self):

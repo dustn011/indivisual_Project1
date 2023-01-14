@@ -1213,21 +1213,6 @@ p, li { white-space: pre-wrap; }
       <string>메세지</string>
      </property>
     </widget>
-    <widget class="QTextBrowser" name="tb_todayclasslist">
-     <property name="geometry">
-      <rect>
-       <x>30</x>
-       <y>520</y>
-       <width>381</width>
-       <height>31</height>
-      </rect>
-     </property>
-     <property name="font">
-      <font>
-       <family>맑은 고딕</family>
-      </font>
-     </property>
-    </widget>
     <widget class="QPushButton" name="btn_showChalendar">
      <property name="geometry">
       <rect>
@@ -1331,6 +1316,16 @@ p, li { white-space: pre-wrap; }
       <set>Qt::AlignCenter</set>
      </property>
     </widget>
+    <widget class="QListWidget" name="tb_todayclasslist">
+     <property name="geometry">
+      <rect>
+       <x>40</x>
+       <y>520</y>
+       <width>371</width>
+       <height>21</height>
+      </rect>
+     </property>
+    </widget>
     <zorder>attandance_background_box</zorder>
     <zorder>HRDheader_trainingcourse</zorder>
     <zorder>label_15</zorder>
@@ -1355,12 +1350,12 @@ p, li { white-space: pre-wrap; }
     <zorder>time_leave</zorder>
     <zorder>time_present</zorder>
     <zorder>btn_message</zorder>
-    <zorder>tb_todayclasslist</zorder>
     <zorder>btn_showChalendar</zorder>
     <zorder>label_3</zorder>
     <zorder>lbl_myattandance</zorder>
     <zorder>lbl_course</zorder>
     <zorder>lbl_absentDay</zorder>
+    <zorder>tb_todayclasslist</zorder>
    </widget>
    <widget class="QWidget" name="schedule_page">
     <widget class="QLabel" name="HRDheader_schedule">
