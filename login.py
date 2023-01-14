@@ -1,10 +1,12 @@
 import pymysql
 import sys
+import threading
+import time
+
 from PyQt5.QtWidgets import *
 from PyQt5 import uic
 from PyQt5.QtCore import QTime, QDate
 from datetime import timedelta, datetime
-import threading
 
 
 # ui 클래스
@@ -115,6 +117,10 @@ class Bcorn(QWidget, form_class):
         # ---------------- 메세지 보내기 위젯 ----------------
         # 메세지 보내기 버튼 누르면 메세지 보내는 메서드 실행
         self.btn_sendMessage.clicked.connect(self.method_sendMessage)
+
+        # ---------------- 쓰레드 ----------------
+        # thread1 = threading.Thread(target = self.show_announcement, daemon=True)
+        # thread1.start()
 
     # 공지 등록 버튼 누르면 라인에디트에 적혀있는 글씨 db에 저장. 이미 공지 등록되있으면 수정하시겠습니까? 질문하기
     def method_addClassList(self):
@@ -848,7 +854,24 @@ class Bcorn(QWidget, form_class):
         self.led_studentID.clear()
         self.led_studentPW.clear()
         self.HRDheader_trainingcourse.setText(f'{self.account[1]}님의 훈련과정')
+        print(self.account)
 
+        # 공지사항 출력(쓰레드로 계속 업데이트 해주고 싶음)
+        self.method_announcement()
+        # 출석 상태에 따라서 어떤 출색 위젯을 먼저 보이게 할 지 설정
+        self.check_attandance()
+        # 하단 출석상태 출력 실험 실행
+        self.show_attandance()
+        # 출석률 progress바에 출력
+        self.calculateAttendance()
+
+    # def show_announcement(self):
+    #     while 1:
+    #         self.method_announcement()
+    #         time.sleep(1)
+
+    # 공지사항 가져오는 함수(학생)
+    def method_announcement(self):
         # DB 연결하기
         src_db = pymysql.connect(host='10.10.21.102', user='local', password='0000', db='b-corn', charset='utf8')
         # DB와 상호작용하기 위해 연결해주는 cursor 객체 만듬
@@ -864,19 +887,12 @@ class Bcorn(QWidget, form_class):
 
         # DB 닫아주기
         src_db.close()
+
+        # 공지사항 출력
         if bool(announcement):
             self.tb_todayclasslist.setText(announcement[0][0])
         else:
             self.tb_todayclasslist.clear()
-
-        print(self.account)
-
-        # 출석 상태에 따라서 어떤 출색 위젯을 먼저 보이게 할 지 설정
-        self.check_attandance()
-        # 하단 출석상태 출력 실험 실행
-        self.show_attandance()
-        # 출석률 progress바에 출력
-        self.calculateAttendance()
 
     # 로그인 실패 시 실행하는 함수(학생)
     def reject_Login(self):
